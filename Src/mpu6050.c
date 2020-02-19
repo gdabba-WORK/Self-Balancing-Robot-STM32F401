@@ -45,7 +45,7 @@ void MPU6050_WriteOneByte(uint8_t RegAddr, uint8_t Data)
 
 	status = HAL_I2C_Mem_Write(&MPU6050_I2C_PORT,MPU6050_DEVICE_ADDR,RegAddr,I2C_MEMADD_SIZE_8BIT,&Data,1,1000);
 	sprintf(msg, "MPU6050_WriteOneByte() : %u\r\n", status);
-	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 0xFFFF);
+	HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 1000U);
 	return;
 }
 

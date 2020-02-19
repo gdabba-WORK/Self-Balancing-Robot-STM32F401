@@ -36,6 +36,7 @@ extern "C" {
 #include "stm32f4xx_hal_uart.h"
 #include <stdio.h>
 #include <string.h>
+#include "stepperMotor.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -91,6 +92,10 @@ void Error_Handler(void);
 #define MPU_SDA_GPIO_Port GPIOC
 #define MPU_SCL_Pin GPIO_PIN_8
 #define MPU_SCL_GPIO_Port GPIOA
+#define HC_TX_Pin GPIO_PIN_9
+#define HC_TX_GPIO_Port GPIOA
+#define HC_RX_Pin GPIO_PIN_10
+#define HC_RX_GPIO_Port GPIOA
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14

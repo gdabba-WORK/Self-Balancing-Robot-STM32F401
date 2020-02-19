@@ -6,31 +6,39 @@
  */
 
 #include "stepperMotor.h"
-#define MYDELAY 1
 
 extern MPU6050_int32_t diffacc;
 
-//void HAL_Delay(uint32_t Delay)
-//{
-//	uint32_t tickstart = HAL_GetTick();
-//	uint32_t wait = Delay;
-//	//	uint8_t count = 0;
-//	//	char msg[20];
-//	/* Add a freq to guarantee minimum wait */
-//	if (wait < HAL_MAX_DELAY)
-//	{
-////		wait += (uint32_t)(uwTickFreq);
-//	}
-//	//	sprintf(msg, "start = %ld\nwait = %ld\n", tickstart, wait);
-//	//	sprintf(msg, "%ld\n%ld\n", tickstart, wait);
-//	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 0xFFFF);
-//	while((HAL_GetTick() - tickstart) < wait)
-//	{
-//		//		printf("while() %d\n", ++count);
-//	}
-//	//	sprintf(msg, "end = %ld\n", HAL_GetTick());
-//	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 0xFFFF);
-//}
+uint8_t step = 0U;
+uint8_t step_delay_dynamic = 3U;
+uint8_t step_delay_static = 0U;
+
+Robot_Direction direction_flag = FORWARD;
+Motor_Mode mode_flag = ONETWO_PHASE;
+Motor_State state_flag = BOTH_MOTOR;
+
+
+void HAL_Delay(uint32_t Delay)
+{
+	uint32_t tickstart = HAL_GetTick();
+	uint32_t wait = Delay;
+	//	uint8_t count = 0;
+	//	char msg[20];
+	/* Add a freq to guarantee minimum wait */
+	if (wait < HAL_MAX_DELAY)
+	{
+		wait += (uint32_t)(uwTickFreq);
+	}
+	//	sprintf(msg, "start = %ld\nwait = %ld\n", tickstart, wait);
+	//	sprintf(msg, "%ld\n%ld\n", tickstart, wait);
+	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 0xFFFF);
+	while((HAL_GetTick() - tickstart) < wait)
+	{
+		//		printf("while() %d\n", ++count);
+	}
+	//	sprintf(msg, "end = %ld\n", HAL_GetTick());
+	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 0xFFFF);
+}
 
 void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
 		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_)
@@ -39,25 +47,25 @@ void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeD
 	HAL_GPIO_WritePin(gpioA_, pinA_, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioB, pinB, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioB_, pinB_, GPIO_PIN_RESET);
-	HAL_Delay(MYDELAY);
+	HAL_Delay(step_delay_dynamic);
 
 	HAL_GPIO_WritePin(gpioA, pinA, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioA_, pinA_, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioB, pinB, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioB_, pinB_, GPIO_PIN_RESET);
-	HAL_Delay(MYDELAY);
+	HAL_Delay(step_delay_dynamic);
 
 	HAL_GPIO_WritePin(gpioA, pinA, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioA_, pinA_, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioB, pinB, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioB_, pinB_, GPIO_PIN_SET);
-	HAL_Delay(MYDELAY);
+	HAL_Delay(step_delay_dynamic);
 
 	HAL_GPIO_WritePin(gpioA, pinA, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioA_, pinA_, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioB, pinB, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioB_, pinB_, GPIO_PIN_SET);
-	HAL_Delay(MYDELAY);
+	HAL_Delay(step_delay_dynamic);
 }
 
 void bigStepper_forward_sequence2(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
@@ -67,25 +75,25 @@ void bigStepper_forward_sequence2(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_Type
 	HAL_GPIO_WritePin(gpioA_, pinA_, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioB, pinB, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioB_, pinB_, GPIO_PIN_RESET);
-	HAL_Delay(MYDELAY);
+	HAL_Delay(step_delay_dynamic);
 
 	HAL_GPIO_WritePin(gpioA, pinA, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioA_, pinA_, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioB, pinB, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioB_, pinB_, GPIO_PIN_RESET);
-	HAL_Delay(MYDELAY);
+	HAL_Delay(step_delay_dynamic);
 
 	HAL_GPIO_WritePin(gpioA, pinA, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioA_, pinA_, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioB, pinB, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioB_, pinB_, GPIO_PIN_SET);
-	HAL_Delay(MYDELAY);
+	HAL_Delay(step_delay_dynamic);
 
 	HAL_GPIO_WritePin(gpioA, pinA, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioA_, pinA_, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioB, pinB, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioB_, pinB_, GPIO_PIN_SET);
-	HAL_Delay(MYDELAY);
+	HAL_Delay(step_delay_dynamic);
 }
 
 
@@ -99,25 +107,25 @@ void bigStepper_backward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_Type
 	HAL_GPIO_WritePin(gpioA_, pinA_, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioB, pinB, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioB_, pinB_, GPIO_PIN_SET);
-	HAL_Delay(MYDELAY);
+	HAL_Delay(step_delay_dynamic);
 
 	HAL_GPIO_WritePin(gpioA, pinA, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioA_, pinA_, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioB, pinB, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioB_, pinB_, GPIO_PIN_SET);
-	HAL_Delay(MYDELAY);
+	HAL_Delay(step_delay_dynamic);
 
 	HAL_GPIO_WritePin(gpioA, pinA, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioA_, pinA_, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioB, pinB, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioB_, pinB_, GPIO_PIN_RESET);
-	HAL_Delay(MYDELAY);
+	HAL_Delay(step_delay_dynamic);
 
 	HAL_GPIO_WritePin(gpioA, pinA, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioA_, pinA_, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(gpioB, pinB, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(gpioB_, pinB_, GPIO_PIN_RESET);
-	HAL_Delay(MYDELAY);
+	HAL_Delay(step_delay_dynamic);
 }
 
 void bigStepper_slower(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
@@ -154,186 +162,7 @@ void bigStepper_slower(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA
 	}
 }
 
-void bigStepper_forward_sequence_parallel(void)
-{
-	// AB상
-	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
-	HAL_Delay(MYDELAY);
-
-	// `AB상
-	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
-	HAL_Delay(MYDELAY);
-
-	// `A`B상
-	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
-	HAL_Delay(MYDELAY);
-
-	// A`B상
-	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
-	HAL_Delay(MYDELAY);
-
-	// Default
-	//	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
-	//	HAL_Delay(MYDELAY);
-}
-
-void bigStepper_forward_sequence_parallel2(void)
-{
-	// A상
-	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
-	HAL_Delay(MYDELAY);
-
-	// B상
-	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
-	HAL_Delay(MYDELAY);
-
-	// `A상
-	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
-	HAL_Delay(MYDELAY);
-
-	// `B상
-	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
-	HAL_Delay(MYDELAY);
-
-	// Default
-	//	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
-	//	HAL_Delay(MYDELAY);
-}
-
-void bigStepper_backward_sequence_parallel(void)
-{
-	// A`B상
-	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
-	HAL_Delay(MYDELAY);
-	//	bigStepper_all_reset();
-
-	// `A`B상
-	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
-	HAL_Delay(MYDELAY);
-	//	bigStepper_all_reset();
-
-	// `AB상
-	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
-	HAL_Delay(MYDELAY);
-	//	bigStepper_all_reset();
-
-	// AB상
-	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
-	HAL_Delay(MYDELAY);
-
-
-
-	// Default
-	//	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
-	//	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
-	//	HAL_Delay(MYDELAY);
-}
-
-void bigStepper_reactToAccel(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
+void reactToAccel(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
 		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_)
 {
 	if (diffacc.Y > 0)
@@ -342,30 +171,249 @@ void bigStepper_reactToAccel(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef *
 		bigStepper_backward_sequence(gpioA, pinA, gpioA_, pinA_, gpioB, pinB, gpioB_, pinB_);
 }
 
-void bigStepper_reactToAccel_parallel(void)
+// A상
+void step_A(void)
 {
-	//	if (diffacc.Y > 4000L)
-	for (uint8_t i=0; i<200; i++)
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
-		bigStepper_forward_sequence_parallel();
-		//		HAL_Delay(500);
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
 	}
-	//	bigStepper_all_reset();
-
-	//	else if(diffacc.Y < -4000L)
-	//		for (uint8_t i=0; i<12; i++)
-	//			bigStepper_forward_sequence_parallel();
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
+	}
+	HAL_Delay(step_delay_dynamic);
 }
 
-void bigStepper_all_reset(void)
+// B상
+void step_B(void)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
+	}
+	HAL_Delay(step_delay_dynamic);
+}
+
+// `A상
+void step_a(void)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
+	}
+	HAL_Delay(step_delay_dynamic);
+}
+
+// `B상
+void step_b(void)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_SET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
+	}
+	HAL_Delay(step_delay_dynamic);
+}
+
+// AB상
+void step_AB(void)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
+	}
+	HAL_Delay(step_delay_dynamic);
+}
+
+// `AB상
+void step_aB(void)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
+	}
+	HAL_Delay(step_delay_dynamic);
+}
+
+// `A`B상
+void step_ab(void)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_SET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
+	}
+	HAL_Delay(step_delay_dynamic);
+}
+
+// A`B상
+void step_Ab(void)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_SET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
+	}
+	HAL_Delay(step_delay_dynamic);
+}
+
+void step_reset(void)
 {
 	HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
+
 	HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
-	HAL_Delay(500);
+}
+
+void unipolar_parallel_sequence_onePhase(void)
+{
+	switch (step%4U) {
+	case 0U :
+		step_A(); break;
+	case 1U :
+		step_B(); break;
+	case 2U :
+		step_a(); break;
+	case 3U :
+		step_b(); break;
+	}
+}
+
+void unipolar_parallel_sequence_twoPhase(void)
+{
+	switch (step%4) {
+	case 0U :
+		step_AB(); break;
+	case 1U :
+		step_aB(); break;
+	case 2U :
+		step_ab(); break;
+	case 3U :
+		step_Ab(); break;
+	}
+}
+
+void unipolar_parallel_sequence_onetwoPhase(void)
+{
+	switch (step%8) {
+	case 0U :
+		step_A(); break;
+	case 1U :
+		step_AB(); break;
+	case 2U :
+		step_B(); break;
+	case 3U :
+		step_aB(); break;
+	case 4U :
+		step_a(); break;
+	case 5U :
+		step_ab(); break;
+	case 6U :
+		step_b(); break;
+	case 7U :
+		step_Ab(); break;
+	}
+}
+
+void reactToAccel_parallel(void)
+{
+	step_reset();
+	switch (mode_flag) {
+	case ONE_PHASE :
+		unipolar_parallel_sequence_onePhase();
+		break;
+	case TWO_PHASE :
+		unipolar_parallel_sequence_twoPhase();
+		break;
+	case ONETWO_PHASE :
+		unipolar_parallel_sequence_onetwoPhase();
+		break;
+	}
+
+	if (direction_flag == FORWARD)
+		step++;
+	else
+		step--;
+
+	if (step_delay_dynamic > step_delay_static)
+		step_delay_dynamic--;
 }
