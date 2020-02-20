@@ -38,8 +38,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define leftSignal 100L
-#define rightSignal 200L
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,43 +48,42 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
 extern MPU6050_int16_t accOffset, gyroOffset;
-extern uint8_t MYDELAY;
+extern uint32_t microTick;
 
 MPU6050_int16_t acc, gyro;
 MPU6050_int32_t diffacc = {0, 0, 0};
 MPU6050_int32_t diffgyro = {0, 0, 0};
 int16_t tmpr;
-
-
 uint8_t mediumSeq = 0;
+
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128
+		.name = "defaultTask",
+		.priority = (osPriority_t) osPriorityNormal,
+		.stack_size = 128
 };
 /* Definitions for motorLeft */
 osThreadId_t motorLeftHandle;
 const osThreadAttr_t motorLeft_attributes = {
-  .name = "motorLeft",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128
+		.name = "motorLeft",
+		.priority = (osPriority_t) osPriorityNormal,
+		.stack_size = 128
 };
 /* Definitions for motorRight */
 osThreadId_t motorRightHandle;
 const osThreadAttr_t motorRight_attributes = {
-  .name = "motorRight",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128
+		.name = "motorRight",
+		.priority = (osPriority_t) osPriorityNormal,
+		.stack_size = 128
 };
 /* Definitions for motorSync */
 osThreadId_t motorSyncHandle;
 const osThreadAttr_t motorSync_attributes = {
-  .name = "motorSync",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128
+		.name = "motorSync",
+		.priority = (osPriority_t) osPriorityNormal,
+		.stack_size = 128
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -102,48 +99,48 @@ void StartMotorSync(void *argument);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /**
-  * @brief  FreeRTOS initialization
-  * @param  None
-  * @retval None
-  */
+ * @brief  FreeRTOS initialization
+ * @param  None
+ * @retval None
+ */
 void MX_FREERTOS_Init(void) {
-  /* USER CODE BEGIN Init */
+	/* USER CODE BEGIN Init */
 
 
-  /* USER CODE END Init */
+	/* USER CODE END Init */
 
-  /* USER CODE BEGIN RTOS_MUTEX */
+	/* USER CODE BEGIN RTOS_MUTEX */
 	/* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
+	/* USER CODE END RTOS_MUTEX */
 
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
+	/* USER CODE BEGIN RTOS_SEMAPHORES */
 	/* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
+	/* USER CODE END RTOS_SEMAPHORES */
 
-  /* USER CODE BEGIN RTOS_TIMERS */
+	/* USER CODE BEGIN RTOS_TIMERS */
 	/* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
+	/* USER CODE END RTOS_TIMERS */
 
-  /* USER CODE BEGIN RTOS_QUEUES */
+	/* USER CODE BEGIN RTOS_QUEUES */
 	/* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
+	/* USER CODE END RTOS_QUEUES */
 
-  /* Create the thread(s) */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+	/* Create the thread(s) */
+	/* creation of defaultTask */
+	defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  /* creation of motorLeft */
-//  motorLeftHandle = osThreadNew(StartMotorLeft, NULL, &motorLeft_attributes);
+	/* creation of motorLeft */
+//	motorLeftHandle = osThreadNew(StartMotorLeft, NULL, &motorLeft_attributes);
 
-  /* creation of motorRight */
-//  motorRightHandle = osThreadNew(StartMotorRight, NULL, &motorRight_attributes);
+	/* creation of motorRight */
+//	motorRightHandle = osThreadNew(StartMotorRight, NULL, &motorRight_attributes);
 
-  /* creation of motorSync */
-  motorSyncHandle = osThreadNew(StartMotorSync, NULL, &motorSync_attributes);
+	/* creation of motorSync */
+	motorSyncHandle = osThreadNew(StartMotorSync, NULL, &motorSync_attributes);
 
-  /* USER CODE BEGIN RTOS_THREADS */
+	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
+	/* USER CODE END RTOS_THREADS */
 
 }
 
@@ -156,10 +153,10 @@ void MX_FREERTOS_Init(void) {
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
-  /* USER CODE BEGIN StartDefaultTask */
+	/* USER CODE BEGIN StartDefaultTask */
 	char msg[50];
 	uint16_t count = 0;
-	uint32_t prev = 0;
+	uint32_t prev_tick = 0;
 	//	uint32_t mystart = HAL_GetTick();
 	//	int8_t myflag = 0;
 
@@ -169,9 +166,8 @@ void StartDefaultTask(void *argument)
 
 	//	sprintf(msg, "%d,%d,%d,%d,%d,%d\n", accOffset.X, accOffset.Y, accOffset.Z, gyroOffset.X, gyroOffset.Y, gyroOffset.Z);
 	//	printf(msg);
-
 	/* Infinite loop */
-	prev = HAL_GetTick();
+	prev_tick = HAL_GetTick();
 	for(;;)
 	{
 
@@ -186,20 +182,24 @@ void StartDefaultTask(void *argument)
 		//		sprintf(msg, "(%4d)%5ld,%+5ld,%+5ld\r\n", ++count, diffacc.X, diffacc.Y, diffacc.Z);
 		//		printf(msg);
 		//		sprintf(msg, "{\"C\":%d,\"X\":%ld,\"Y\":%ld,\"Z\":%ld}\r\n", ++count, diffacc.X, diffacc.Y, diffacc.Z);
-		if ((uint32_t)(HAL_GetTick() - prev) > 20U)
+		if ((uint32_t)(HAL_GetTick() - prev_tick) >= 1000U)
 		{
 			MPU6050_GetData(&acc.X, &acc.Y, &acc.Z, &gyro.X, &gyro.Y, &gyro.Z, &tmpr);
 			diffacc.Y = acc.Y - accOffset.Y;
-//			sprintf(msg, "{\"C\":%d,\"Y\":%ld}\r\n", ++count, diffacc.Y);
-//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000U);
-			prev = HAL_GetTick();
+			sprintf(msg, "{\"C\":%d,\"Y\":%ld}\r\n", ++count, diffacc.Y);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000U);
+
+
+			sprintf(msg, "Tick=%10lu\r\n", microTick);
+			HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000U);
+			prev_tick = HAL_GetTick();
 		}
 		//		if (HAL_OK == HAL_UART_Receive(&huart1, (uint8_t*)rxData, 1U, 3000))
 		//		{
 		//			HAL_UART_Transmit(&huart2, (uint8_t*)rxData, 1U, 0x0A);
 		//		}
 
-//		osDelay(2);
+		//		osDelay(2);
 
 		//		if (HAL_GetTick() - mystart > 10000 && myflag == 0)
 		//		{
@@ -225,7 +225,7 @@ void StartDefaultTask(void *argument)
 		//		printf(msg);
 		//		osDelay(1);
 	}
-  /* USER CODE END StartDefaultTask */
+	/* USER CODE END StartDefaultTask */
 }
 
 /* USER CODE BEGIN Header_StartMotorLeft */
@@ -237,7 +237,7 @@ void StartDefaultTask(void *argument)
 /* USER CODE END Header_StartMotorLeft */
 void StartMotorLeft(void *argument)
 {
-  /* USER CODE BEGIN StartMotorLeft */
+	/* USER CODE BEGIN StartMotorLeft */
 	//	printf("Left()\n");
 	//	uint8_t leftSeq = 0;
 	//	uint16_t count = 0;
@@ -280,7 +280,7 @@ void StartMotorLeft(void *argument)
 		//		}
 		//		while(1);
 	}
-  /* USER CODE END StartMotorLeft */
+	/* USER CODE END StartMotorLeft */
 }
 
 /* USER CODE BEGIN Header_StartMotorRight */
@@ -292,7 +292,7 @@ void StartMotorLeft(void *argument)
 /* USER CODE END Header_StartMotorRight */
 void StartMotorRight(void *argument)
 {
-  /* USER CODE BEGIN StartMotorRight */
+	/* USER CODE BEGIN StartMotorRight */
 	//	uint8_t rightSeq = 0;
 	//	printf("Right()\n");
 	/* Infinite loop */
@@ -308,7 +308,7 @@ void StartMotorRight(void *argument)
 		//		}
 		//		while(1);
 	}
-  /* USER CODE END StartMotorRight */
+	/* USER CODE END StartMotorRight */
 }
 
 /* USER CODE BEGIN Header_StartMotorSync */
@@ -320,7 +320,7 @@ void StartMotorRight(void *argument)
 /* USER CODE END Header_StartMotorSync */
 void StartMotorSync(void *argument)
 {
-  /* USER CODE BEGIN StartMotorSync */
+	/* USER CODE BEGIN StartMotorSync */
 	//	uint32_t mystart = HAL_GetTick();
 	//	int8_t myflag = 0;
 	//	uint16_t count = 0;
@@ -340,7 +340,7 @@ void StartMotorSync(void *argument)
 		//			myflag = 1;
 		//		}
 	}
-  /* USER CODE END StartMotorSync */
+	/* USER CODE END StartMotorSync */
 }
 
 /* Private application code --------------------------------------------------*/
