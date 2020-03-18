@@ -93,7 +93,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-	//	HAL_I2C_DeInit(&hi2c3);
+
 
   /* USER CODE END SysInit */
 

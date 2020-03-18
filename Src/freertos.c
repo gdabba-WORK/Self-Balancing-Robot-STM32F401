@@ -29,6 +29,7 @@
 #include "stepperMotor.h"
 #include "MPU6050.h"
 #include "usart.h"
+#include "complementary_filter.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -49,12 +50,19 @@
 /* USER CODE BEGIN Variables */
 extern MPU6050_int16_t accOffset, gyroOffset;
 extern uint32_t microTick;
+extern MPU6050_float_t filtered_angle;
+extern float_t accel_xz, accel_yz;
+extern MPU6050_float_t tmp_angle;
+extern MPU6050_float_t accel_angle;
+extern float_t dt;
+extern int8_t angle;
+int8_t qrcv = 10;
 
 MPU6050_int16_t acc, gyro;
 MPU6050_int32_t diffacc = {0, 0, 0};
 MPU6050_int32_t diffgyro = {0, 0, 0};
 int16_t tmpr;
-uint8_t mediumSeq = 0;
+
 
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -84,6 +92,11 @@ const osThreadAttr_t motorSync_attributes = {
 		.name = "motorSync",
 		.priority = (osPriority_t) osPriorityNormal,
 		.stack_size = 128
+};
+/* Definitions for myQueue01 */
+osMessageQueueId_t myQueue01Handle;
+const osMessageQueueAttr_t myQueue01_attributes = {
+		.name = "myQueue01"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -121,6 +134,10 @@ void MX_FREERTOS_Init(void) {
 	/* start timers, add new ones, ... */
 	/* USER CODE END RTOS_TIMERS */
 
+	/* Create the queue(s) */
+	/* creation of myQueue01 */
+	myQueue01Handle = osMessageQueueNew (1, sizeof(int8_t), &myQueue01_attributes);
+
 	/* USER CODE BEGIN RTOS_QUEUES */
 	/* add queues, ... */
 	/* USER CODE END RTOS_QUEUES */
@@ -130,10 +147,10 @@ void MX_FREERTOS_Init(void) {
 	defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
 	/* creation of motorLeft */
-//	motorLeftHandle = osThreadNew(StartMotorLeft, NULL, &motorLeft_attributes);
+	motorLeftHandle = osThreadNew(StartMotorLeft, NULL, &motorLeft_attributes);
 
 	/* creation of motorRight */
-//	motorRightHandle = osThreadNew(StartMotorRight, NULL, &motorRight_attributes);
+	//  motorRightHandle = osThreadNew(StartMotorRight, NULL, &motorRight_attributes);
 
 	/* creation of motorSync */
 	motorSyncHandle = osThreadNew(StartMotorSync, NULL, &motorSync_attributes);
@@ -154,47 +171,87 @@ void MX_FREERTOS_Init(void) {
 void StartDefaultTask(void *argument)
 {
 	/* USER CODE BEGIN StartDefaultTask */
-	char msg[50];
-	uint16_t count = 0;
-	uint32_t prev_tick = 0;
-	//	uint32_t mystart = HAL_GetTick();
-	//	int8_t myflag = 0;
+	//	char msg[100];
+	uint32_t prev_tick;
+	//	uint16_t count = 0;
+	osStatus_t status = osError;
 
-	MPU6050_Init(MPU6050_DLPF_BW_42);
-	MPU6050_InitOffset(&acc.X, &acc.Y, &acc.Z, &gyro.X, &gyro.Y, &gyro.Z, &tmpr);
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+//	MPU6050_Init(MPU6050_DLPF_BW_42);
+//	MPU6050_InitOffset(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
 
-	//	sprintf(msg, "%d,%d,%d,%d,%d,%d\n", accOffset.X, accOffset.Y, accOffset.Z, gyroOffset.X, gyroOffset.Y, gyroOffset.Z);
-	//	printf(msg);
-	/* Infinite loop */
+	//	sprintf(msg, "%d,%d,%d,%d,%d,%d\r\n", accOffset.x, accOffset.y, accOffset.z, gyroOffset.x, gyroOffset.y, gyroOffset.z);
+	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
 	prev_tick = HAL_GetTick();
+	initDT();
+	/* Infinite loop */
 	for(;;)
 	{
-
-		//		MPU6050_GetData(&acc.X, &acc.Y, &acc.Z, &gyro.X, &gyro.Y, &gyro.Z, &tmpr);
-		//		diffacc.X = acc.X - accOffset.X;
-		//		diffacc.Y = acc.Y - accOffset.Y;
-		//		diffacc.Z  = acc.Z - accOffset.Z;
-		//		diffgyro.X = gyro.X - gyroOffset.X;
-		//		diffgyro.Y = gyro.Y - gyroOffset.Y;
-		//		diffgyro.Z = gyro.Z - gyroOffset.Z;
-
 		//		sprintf(msg, "(%4d)%5ld,%+5ld,%+5ld\r\n", ++count, diffacc.X, diffacc.Y, diffacc.Z);
 		//		printf(msg);
 		//		sprintf(msg, "{\"C\":%d,\"X\":%ld,\"Y\":%ld,\"Z\":%ld}\r\n", ++count, diffacc.X, diffacc.Y, diffacc.Z);
-		if ((uint32_t)(HAL_GetTick() - prev_tick) >= 1000U)
+
+		//		sprintf(msg, "dt=%8.8f\r\n", 10.0F);
+		//		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 10UL);
+/*
+		MPU6050_GetData(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
+		diffacc.x = (int32_t)(acc.x - accOffset.x);
+		diffacc.y = (int32_t)(acc.y - accOffset.y);
+		diffacc.z  = (int32_t)(acc.z - accOffset.z);
+		diffgyro.x = (int32_t)(gyro.x - gyroOffset.x);
+		diffgyro.y = (int32_t)(gyro.y - gyroOffset.y);
+		diffgyro.z = (int32_t)(gyro.z - gyroOffset.z);
+		calcDT();
+		calcAccelYPR();
+		calcGyroYPR();
+		calcFilteredYPR();
+*/
+		//		sprintf(msg, "status=%d\r\n", status);
+		//		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
+
+		//		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
+		//		sprintf(msg, "{\"C\":%d,\"Y\":%ld}\r\n", ++count, diffacc.Y);
+		//		HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+
+
+		if ((HAL_GetTick() - prev_tick) >= 3000UL)
 		{
-			MPU6050_GetData(&acc.X, &acc.Y, &acc.Z, &gyro.X, &gyro.Y, &gyro.Z, &tmpr);
-			diffacc.Y = acc.Y - accOffset.Y;
-			sprintf(msg, "{\"C\":%d,\"Y\":%ld}\r\n", ++count, diffacc.Y);
-			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000U);
+			osThreadFlagsSet(motorLeftHandle, 0x01UL);
+			osThreadFlagsWait(0x01UL, osFlagsWaitAny, osWaitForever);
+			status = osMessageQueuePut(myQueue01Handle, &angle, 0, 0);
+			osThreadFlagsSet(motorLeftHandle, 0x01UL);
+			osThreadFlagsWait(0x02UL, osFlagsWaitAny, osWaitForever);
+			//			sprintf(msg, "Tick=%10lu\r\n", microTick);
+			//			HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
 
+			//			if (status == osOK)
+			//				sprintf(msg, "C=%5d  D=%12f  T=%12f  A=%12f  R=%12u\r\n", count, filtered_angle.x, tmp_angle.x, accel_angle.x, qmsg);
+			//			else
+			//								sprintf(msg, "C=%5d  X=%12ld  Y=%12ld  Z=%12ld\r\n", count, diffacc.x, diffacc.y, diffacc.z);
+			//				sprintf(msg, "C=%5d  X=%12d  Y=%12d  Z=%12d\r\n", count, acc.x, acc.y, acc.z);
+			//				sprintf(msg, "C=%5d  X=%12d  Y=%12d  Z=%12d\r\n", count, gyro.x, gyro.y, gyro.z);
+			//				sprintf(msg, "C=%5d  D=%+12f  T=%+12f  A=%+12f\r\n", count, filtered_angle.x, tmp_angle.x, accel_angle.x);
+			//				sprintf(msg, "pow(-10,2)=%12lf\r\n", pow(-10, 2));
+			//				sprintf(msg, "angle=%+5d\r\n", angle);
+			//			HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
 
-			sprintf(msg, "Tick=%10lu\r\n", microTick);
-			HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000U);
+			//			sprintf(msg, "diffacc.x=%8ld  diffacc.y=%8ld  diffacc.z=%8ld\r\n", diffacc.x, diffacc.y, diffacc.z);
+			//			HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
+			//			sprintf(msg, "diffgyro.x=%8ld  diffgyro.y=%8ld  diffgyro.z=%8ld\r\n", diffgyro.x, diffgyro.y, diffgyro.z);
+			//			HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
+
+			//			sprintf(msg, "acc.x=%8d  acc.y=%8d  acc.z=%8d\r\n", acc.x, acc.y, acc.z);
+			//			HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
+
+			//			sprintf(msg, "gyro.x=%8d  gyro.y=%8d  gyro.z=%8d\r\n", gyro.x, gyro.y, gyro.z);
+			//			HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
+
+			//			sprintf(msg, "dt=%8.8f\r\n", dt);
+			//			HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
+			//			count++;
 			prev_tick = HAL_GetTick();
 		}
-		//		if (HAL_OK == HAL_UART_Receive(&huart1, (uint8_t*)rxData, 1U, 3000))
+
+		//		if (HAL_OK == HAL_UART_Receive(&huart1, (uint8_t*)rxData, 1U, 3000UL))
 		//		{
 		//			HAL_UART_Transmit(&huart2, (uint8_t*)rxData, 1U, 0x0A);
 		//		}
@@ -245,12 +302,21 @@ void StartMotorLeft(void *argument)
 	/* Infinite loop */
 	for(;;)
 	{
+		osThreadFlagsWait(0x03UL, osFlagsWaitAll, osWaitForever);
+		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+		osThreadFlagsSet(defaultTaskHandle, 0x01UL);
+		osThreadFlagsWait(0x01UL, osFlagsWaitAll, osWaitForever);
+		osThreadFlagsSet(motorSyncHandle, 0x01UL);
+		osThreadFlagsWait(0x02UL, osFlagsWaitAll, osWaitForever);
+
+		osThreadFlagsSet(defaultTaskHandle, 0x02UL);
+		osThreadFlagsSet(motorSyncHandle, 0x02UL);
 		//		HAL_UART_Transmit(&huart2, (uint8_t*)leftMsg, strlen(leftMsg), 0xFFFF);
 
 		//		if (leftSeq == *argument)
 		//		{
 		//		bigStepper_reactToAccel(SM2A_GPIO_Port, SM2A_Pin, SM2A__GPIO_Port, SM2A__Pin, SM2B_GPIO_Port, SM2B_Pin, SM2B__GPIO_Port, SM2B__Pin);
-		bigStepper_forward_sequence2(SM2A_GPIO_Port, SM2A_Pin, SM2A__GPIO_Port, SM2A__Pin, SM2B_GPIO_Port, SM2B_Pin, SM2B__GPIO_Port, SM2B__Pin);
+		//		bigStepper_forward_sequence2(SM2A_GPIO_Port, SM2A_Pin, SM2A__GPIO_Port, SM2A__Pin, SM2B_GPIO_Port, SM2B_Pin, SM2B__GPIO_Port, SM2B__Pin);
 		//		if (++count == 500)
 		//		{
 		//			HAL_GPIO_WritePin(SM1EN_GPIO_Port, SM1EN_Pin, GPIO_PIN_RESET);
@@ -321,24 +387,22 @@ void StartMotorRight(void *argument)
 void StartMotorSync(void *argument)
 {
 	/* USER CODE BEGIN StartMotorSync */
-	//	uint32_t mystart = HAL_GetTick();
-	//	int8_t myflag = 0;
-	//	uint16_t count = 0;
-	//	char msg[20];
+	uint32_t prev_tick;
+	prev_tick = HAL_GetTick();
 	/* Infinite loop */
 	for(;;)
-		//	  printf("HelloWorld!\n");
 	{
-		//	  osSignalWait(300, 0);
+		//		if (qrcv == 10)
 		reactToAccel_parallel();
-		//		count++;
-		//		if (HAL_GetTick() - mystart > 10000 && myflag == 0)
-		//		{
-		//			sprintf(msg, "count2 = %d\n", count);
-		//			//					printf(msg);
-		//			HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 0xFFFF);
-		//			myflag = 1;
-		//		}
+		if ((HAL_GetTick() - prev_tick) >= 3000UL)
+		{
+			osThreadFlagsSet(motorLeftHandle, 0x02UL);
+			osThreadFlagsWait(0x01UL, osFlagsWaitAny, osWaitForever);
+			osMessageQueueGet(myQueue01Handle, &qrcv, 0, 0);
+			osThreadFlagsSet(motorLeftHandle, 0x02UL);
+			osThreadFlagsWait(0x02UL, osFlagsWaitAny, osWaitForever);
+			prev_tick = HAL_GetTick();
+		}
 	}
 	/* USER CODE END StartMotorSync */
 }

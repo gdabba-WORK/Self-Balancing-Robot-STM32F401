@@ -26,13 +26,12 @@ HAL_StatusTypeDef status;
 
 uint8_t MPU6050_ReadOneByte(uint8_t RegAddr)
 {
-	//	char msg[50];
-
 	uint8_t Data = 0;
-	status = HAL_I2C_Mem_Read(&MPU6050_I2C_PORT,MPU6050_DEVICE_ADDR,RegAddr,1,&Data,1,0x0A);
+	status = HAL_I2C_Mem_Read(&MPU6050_I2C_PORT,MPU6050_DEVICE_ADDR,RegAddr,1,&Data,1,3000UL);
 	//	sprintf(msg, "MPU6050_ReadOneByte() : %u\r\n", status);
 	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 0xFFFF);
-	//	printf("MPU6050_ReadOneByte() : %u\n", status);
+	if (status != HAL_OK)
+		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 	return Data;
 }
 
@@ -41,11 +40,12 @@ uint8_t MPU6050_ReadOneByte(uint8_t RegAddr)
 // 리턴값 : 센서응답값
 void MPU6050_WriteOneByte(uint8_t RegAddr, uint8_t Data)
 {
-	char msg[50];
-
-	status = HAL_I2C_Mem_Write(&MPU6050_I2C_PORT,MPU6050_DEVICE_ADDR,RegAddr,I2C_MEMADD_SIZE_8BIT,&Data,1,1000);
-	sprintf(msg, "MPU6050_WriteOneByte() : %u\r\n", status);
-	HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 1000U);
+	status = HAL_I2C_Mem_Write(&MPU6050_I2C_PORT,MPU6050_DEVICE_ADDR,RegAddr,I2C_MEMADD_SIZE_8BIT,&Data,1,3000UL);
+	//	sprintf(msg, "MPU6050_WriteOneByte() : %u\r\n", status);
+	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
+	if (status != HAL_OK)
+		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+	HAL_Delay(100);
 	return;
 }
 
@@ -80,8 +80,9 @@ bool MPU6050_WriteOneBit(uint8_t RegAddr, uint8_t BitNum, uint8_t Data)
 bool MPU6050_ReadBuff(uint8_t RegAddr, uint8_t Num, uint8_t *pBuff)
 {
 	// 메모리 읽기(디바이스 어드레스, 8비트 어드레스 메모리 크기, 버퍼 포인터, 버퍼숫자, 시도횟수)
-	status = HAL_I2C_Mem_Read(&MPU6050_I2C_PORT,MPU6050_DEVICE_ADDR,RegAddr,I2C_MEMADD_SIZE_8BIT,pBuff,Num,0x0A);
-	//	printf("MPU6050_ReadBuff() : %u\n", status);
+	status = HAL_I2C_Mem_Read(&MPU6050_I2C_PORT,MPU6050_DEVICE_ADDR,RegAddr,I2C_MEMADD_SIZE_8BIT,pBuff,Num,3000UL);
+	if (status != HAL_OK)
+		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 	return status;
 }
 
@@ -159,7 +160,9 @@ void MPU6050_Init(uint8_t	lpf)
 	// added by gdabba
 	//	MPU6050_WriteOneByte(MPU6050_RA_PWR_MGMT_1, 0x00);
 	//	uint8_t buffer[1] = {0};
-	//	char msg[10];
+//	char msg[50];
+//	sprintf(msg, "HAL_I2C_IsDeviceReady()=%#x\r\n", HAL_I2C_IsDeviceReady(&hi2c3, MPU6050_DEVICE_ADDR, 10UL, 1000UL));
+//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
 
 	MPU6050_SetDeviceResetEnabled(1);
 	MPU6050_SetSleepEnabled(0);
@@ -170,10 +173,10 @@ void MPU6050_Init(uint8_t	lpf)
 	//	MPU6050_ReadBuff(MPU6050_RA_SMPLRT_DIV, 1, buffer);
 	//	sprintf(msg, "SMPLRT=%u", buffer[0]);
 	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 0xFFFF);
-	//	osDelay(3000);
+	//	HAL_Delay(3000);
 
 	//	MPU6050_SetClockSource(MPU6050_CLOCK_PLL_XGYRO);
-	MPU6050_SetFullScaleGyroRange(MPU6050_GYRO_FS_1000);
+	MPU6050_SetFullScaleGyroRange(MPU6050_GYRO_FS_250);
 	MPU6050_SetFullScaleAccelRange(MPU6050_ACCEL_FS_2);
 
 	/*
@@ -195,7 +198,7 @@ void MPU6050_Init(uint8_t	lpf)
 	//	MPU6050_WriteOneBit(MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_LATCH_INT_EN_BIT, 1);
 	//	MPU6050_WriteOneBit(MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_INT_RD_CLEAR_BIT, 1);
 	//	MPU6050_WriteOneBit(MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_DATA_RDY_BIT, 1);
-	osDelay(100);  // 자이로 안정화 대기
+	HAL_Delay(100);  // 자이로 안정화 대기
 }
 
 void MPU6050_InitOffset(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz, int16_t* tmpr)
@@ -207,22 +210,28 @@ void MPU6050_InitOffset(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int1
 	{
 		MPU6050_GetData(ax,ay,az,gx,gy,gz,tmpr);
 
-		TempAx += *ax;
-		TempAy += *ay;
-		TempAz += *az;
-		TempGx += *gx;
-		TempGy += *gy;
-		TempGz += *gz;
-		osDelay(1);
+		TempAx += (int32_t)*ax;
+		TempAy += (int32_t)*ay;
+		TempAz += (int32_t)*az;
+		TempGx += (int32_t)*gx;
+		TempGy += (int32_t)*gy;
+		TempGz += (int32_t)*gz;
+		//
+		//		if (i%64 == 0)
+		//			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+		//		if ((i+32)%64 == 0)
+		//			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+		HAL_Delay(1);
 	}
+	//	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
-	accOffset.X = TempAx >> 11;
-	accOffset.Y = TempAy >> 11;
-	accOffset.Z = TempAz >> 11;
+	accOffset.x = (int16_t)(TempAx >> 11);
+	accOffset.y = (int16_t)(TempAy >> 11);
+	accOffset.z = (int16_t)(TempAz >> 11);
 
-	gyroOffset.X = TempGx >> 11;
-	gyroOffset.Y = TempGy >> 11;
-	gyroOffset.Z = TempGz >> 11;
+	gyroOffset.x = (int16_t)(TempGx >> 11);
+	gyroOffset.y = (int16_t)(TempGy >> 11);
+	gyroOffset.z = (int16_t)(TempGz >> 11);
 }
 
 void MPU6050_GetData(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz, int16_t* tmpr)
