@@ -47,20 +47,20 @@ void bigStepper_slower(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA
 void reactToAccel(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
 		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_);
 
-void step_A(void);
-void step_B(void);
-void step_a(void);
-void step_b(void);
-void step_AB(void);
-void step_aB(void);
-void step_ab(void);
-void step_Ab(void);
+void step_A(uint8_t step_delay_dynamic);
+void step_B(uint8_t step_delay_dynamic);
+void step_a(uint8_t step_delay_dynamic);
+void step_b(uint8_t step_delay_dynamic);
+void step_AB(uint8_t step_delay_dynamic);
+void step_aB(uint8_t step_delay_dynamic);
+void step_ab(uint8_t step_delay_dynamic);
+void step_Ab(uint8_t step_delay_dynamic);
 void step_reset(void);
 
-void unipolar_parallel_sequence_onePhase(void);
-void unipolar_parallel_sequence_twoPhase(void);
-void unipolar_parallel_sequence_onetwoPhase(void);
+void unipolar_parallel_sequence_onePhase(uint8_t step_delay_dynamic);
+void unipolar_parallel_sequence_twoPhase(uint8_t step_delay_dynamic);
+void unipolar_parallel_sequence_onetwoPhase(uint8_t step_delay_dynamic);
 
-void reactToAccel_parallel(void);
+void reactToAccel_parallel(Robot_Direction);
 
 #endif /* STEPPERMOTOR_H_ */

@@ -45,6 +45,7 @@ void MPU6050_WriteOneByte(uint8_t RegAddr, uint8_t Data)
 	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
 	if (status != HAL_OK)
 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+//	HAL_Delay(100);
 	HAL_Delay(100);
 	return;
 }
@@ -198,7 +199,8 @@ void MPU6050_Init(uint8_t	lpf)
 	//	MPU6050_WriteOneBit(MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_LATCH_INT_EN_BIT, 1);
 	//	MPU6050_WriteOneBit(MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_INT_RD_CLEAR_BIT, 1);
 	//	MPU6050_WriteOneBit(MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_DATA_RDY_BIT, 1);
-	HAL_Delay(100);  // 자이로 안정화 대기
+//	HAL_Delay(100);  // 자이로 안정화 대기
+	HAL_Delay(100);
 }
 
 void MPU6050_InitOffset(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz, int16_t* tmpr)
@@ -221,6 +223,7 @@ void MPU6050_InitOffset(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int1
 		//			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 		//		if ((i+32)%64 == 0)
 		//			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+//		HAL_Delay(1);
 		HAL_Delay(1);
 	}
 	//	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);

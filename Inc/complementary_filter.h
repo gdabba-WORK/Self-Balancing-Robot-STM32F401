@@ -12,8 +12,18 @@
 #include <math.h>
 
 typedef struct {
-	float x;
-	float y;
-	float z;
+	float_t x;
+	float_t y;
+	float_t z;
 } MPU6050_float_t;
 #endif /* INC_COMPLEMENTARY_FILTER_H_ */
+
+void initDT(void);
+
+void calcDT(void);
+
+void calcAccelYPR(void);
+
+void calcGyroYPR(void);
+
+void calcFilteredYPR(int8_t*);

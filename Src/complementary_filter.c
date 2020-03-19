@@ -48,7 +48,8 @@ void calcAccelYPR(void)
 	accel.y = (float_t)diffacc.y / 16384.0F;
 
 	// 센서가 뒤집어져서 accelerometer Z축이 음수의 값을 가짐
-	accel.z = (float_t)(diffacc.z - 16384L) / 16384.0F;
+//	accel.z = (float_t)(diffacc.z - 16384L) / 16384.0F;
+	accel.z = (float_t)(diffacc.z + 16384L) / 16384.0F;
 
 	accel_yz = (float)sqrt(pow(accel.y, 2) + pow(accel.z, 2));
 	accel_angle.y = (float)atan(-accel.x / accel_yz) * RADIANS_TO_DEGREES;
@@ -70,7 +71,7 @@ void calcGyroYPR(void)
 	gyro_angle.z = gyro.z * dt;
 }
 
-void calcFilteredYPR(void)
+void calcFilteredYPR(int8_t* angle)
 {
 	const float_t ALPHA = 0.96;
 
@@ -82,5 +83,5 @@ void calcFilteredYPR(void)
 	filtered_angle.y = (ALPHA * tmp_angle.y) + ((1.0F-ALPHA) * accel_angle.y);
 	filtered_angle.z = tmp_angle.z;
 
-	angle = (int8_t)filtered_angle.x;
+	*angle = (int8_t)filtered_angle.x;
 }

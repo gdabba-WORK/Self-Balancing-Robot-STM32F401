@@ -10,7 +10,7 @@
 extern MPU6050_int32_t diffacc;
 
 uint8_t step = 0U;
-uint8_t step_delay_dynamic = 3U;
+uint8_t step_delay_dynamic = 4U;
 uint8_t step_delay_static = 0U;
 
 Robot_Direction direction_flag = FORWARD;
@@ -172,7 +172,7 @@ void reactToAccel(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, ui
 }
 
 // A상
-void step_A(void)
+void step_A(uint8_t step_delay_dynamic)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -192,7 +192,7 @@ void step_A(void)
 }
 
 // B상
-void step_B(void)
+void step_B(uint8_t step_delay_dynamic)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -212,7 +212,7 @@ void step_B(void)
 }
 
 // `A상
-void step_a(void)
+void step_a(uint8_t step_delay_dynamic)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -232,7 +232,7 @@ void step_a(void)
 }
 
 // `B상
-void step_b(void)
+void step_b(uint8_t step_delay_dynamic)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -252,7 +252,7 @@ void step_b(void)
 }
 
 // AB상
-void step_AB(void)
+void step_AB(uint8_t step_delay_dynamic)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -272,7 +272,7 @@ void step_AB(void)
 }
 
 // `AB상
-void step_aB(void)
+void step_aB(uint8_t step_delay_dynamic)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -292,7 +292,7 @@ void step_aB(void)
 }
 
 // `A`B상
-void step_ab(void)
+void step_ab(uint8_t step_delay_dynamic)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -312,7 +312,7 @@ void step_ab(void)
 }
 
 // A`B상
-void step_Ab(void)
+void step_Ab(uint8_t step_delay_dynamic)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -344,68 +344,77 @@ void step_reset(void)
 	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
 }
 
-void unipolar_parallel_sequence_onePhase(void)
+void unipolar_parallel_sequence_onePhase(uint8_t step_delay_dynamic)
 {
 	switch (step%4U) {
 	case 0U :
-		step_A(); break;
+		step_A(step_delay_dynamic); break;
 	case 1U :
-		step_B(); break;
+		step_B(step_delay_dynamic); break;
 	case 2U :
-		step_a(); break;
+		step_a(step_delay_dynamic); break;
 	case 3U :
-		step_b(); break;
+		step_b(step_delay_dynamic); break;
 	}
 }
 
-void unipolar_parallel_sequence_twoPhase(void)
+void unipolar_parallel_sequence_twoPhase(uint8_t step_delay_dynamic)
 {
 	switch (step%4) {
 	case 0U :
-		step_AB(); break;
+		step_AB(step_delay_dynamic); break;
 	case 1U :
-		step_aB(); break;
+		step_aB(step_delay_dynamic); break;
 	case 2U :
-		step_ab(); break;
+		step_ab(step_delay_dynamic); break;
 	case 3U :
-		step_Ab(); break;
+		step_Ab(step_delay_dynamic); break;
 	}
 }
 
-void unipolar_parallel_sequence_onetwoPhase(void)
+void unipolar_parallel_sequence_onetwoPhase(uint8_t step_delay_dynamic)
 {
 	switch (step%8) {
 	case 0U :
-		step_A(); break;
+		step_A(step_delay_dynamic); break;
 	case 1U :
-		step_AB(); break;
+		step_AB(step_delay_dynamic); break;
 	case 2U :
-		step_B(); break;
+		step_B(step_delay_dynamic); break;
 	case 3U :
-		step_aB(); break;
+		step_aB(step_delay_dynamic); break;
 	case 4U :
-		step_a(); break;
+		step_a(step_delay_dynamic); break;
 	case 5U :
-		step_ab(); break;
+		step_ab(step_delay_dynamic); break;
 	case 6U :
-		step_b(); break;
+		step_b(step_delay_dynamic); break;
 	case 7U :
-		step_Ab(); break;
+		step_Ab(step_delay_dynamic); break;
 	}
 }
 
-void reactToAccel_parallel(void)
+void reactToAccel_parallel(Robot_Direction direction_flag)
 {
+	static uint8_t step_delay_dynamic = 4U;
+	static Robot_Direction prev_direction_flag = FORWARD;
+
+	if (direction_flag != prev_direction_flag)
+	{
+		prev_direction_flag = direction_flag;
+		step_delay_dynamic = 4U;
+	}
+
 	step_reset();
 	switch (mode_flag) {
 	case ONE_PHASE :
-		unipolar_parallel_sequence_onePhase();
+		unipolar_parallel_sequence_onePhase(step_delay_dynamic);
 		break;
 	case TWO_PHASE :
-		unipolar_parallel_sequence_twoPhase();
+		unipolar_parallel_sequence_twoPhase(step_delay_dynamic);
 		break;
 	case ONETWO_PHASE :
-		unipolar_parallel_sequence_onetwoPhase();
+		unipolar_parallel_sequence_onetwoPhase(step_delay_dynamic);
 		break;
 	}
 
