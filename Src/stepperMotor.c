@@ -10,7 +10,7 @@
 extern MPU6050_int32_t diffacc;
 
 uint8_t step = 0U;
-uint8_t step_delay_dynamic = 4U;
+uint8_t step_delay_dynamic = 10U;
 uint8_t step_delay_static = 0U;
 
 Robot_Direction direction_flag = FORWARD;
@@ -394,15 +394,27 @@ void unipolar_parallel_sequence_onetwoPhase(uint8_t step_delay_dynamic)
 	}
 }
 
-void reactToAccel_parallel(Robot_Direction direction_flag)
+void reactToAccel_parallel(Robot_Direction* direction_flag, int8_t* angle)
 {
-	static uint8_t step_delay_dynamic = 4U;
+//	static uint8_t step_delay_dynamic = 10U;
 	static Robot_Direction prev_direction_flag = FORWARD;
+	static int8_t prev_angle = 0;
+	//	static uint16_t step_max = 400U;
 
-	if (direction_flag != prev_direction_flag)
+	if (prev_angle != (*angle))
 	{
-		prev_direction_flag = direction_flag;
-		step_delay_dynamic = 4U;
+		prev_angle = (*angle);
+		if ((*angle) >= -10 && (*angle) <= 10)
+			step_delay_static = (uint8_t)(5 - abs(*angle)/2);
+		else
+			step_delay_static = 0U;
+		step_delay_dynamic = step_delay_static;
+	}
+
+	if (prev_direction_flag != *direction_flag)
+	{
+		prev_direction_flag = *direction_flag;
+		step_delay_dynamic = 5U;
 	}
 
 	step_reset();
@@ -418,11 +430,37 @@ void reactToAccel_parallel(Robot_Direction direction_flag)
 		break;
 	}
 
-	if (direction_flag == FORWARD)
+	if (*direction_flag == FORWARD)
 		step++;
 	else
 		step--;
 
 	if (step_delay_dynamic > step_delay_static)
 		step_delay_dynamic--;
+
+	//	if (step_max > 0U)
+		//	{
+		//		step_reset();
+	//		switch (mode_flag) {
+	//		case ONE_PHASE :
+	//			unipolar_parallel_sequence_onePhase(step_delay_dynamic);
+	//			break;
+	//		case TWO_PHASE :
+	//			unipolar_parallel_sequence_twoPhase(step_delay_dynamic);
+	//			break;
+	//		case ONETWO_PHASE :
+	//			unipolar_parallel_sequence_onetwoPhase(step_delay_dynamic);
+	//			break;
+	//		}
+	//
+	//		if (direction_flag == FORWARD)
+	//			step++;
+	//		else
+	//			step--;
+	//
+	//		if (step_delay_dynamic > step_delay_static)
+	//			step_delay_dynamic--;
+	//
+	//		step_max--;
+	//	}
 }
