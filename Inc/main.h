@@ -37,6 +37,7 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 #include "stepperMotor.h"
+#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

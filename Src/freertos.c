@@ -197,13 +197,13 @@ void StartDefaultTask(void *argument)
 		//		HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 
 
-		if ((HAL_GetTick() - prev_tick) >= 100UL)
+		if ((HAL_GetTick() - prev_tick) >= 10UL)
 		{
-//			osThreadFlagsSet(motorSyncHandle, 0x0001U);
-//			osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
+			//			osThreadFlagsSet(motorSyncHandle, 0x0001U);
+			//			osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
 			status = osMessageQueuePut(myQueue01Handle, &angle, 0U, 100U);
-//			osThreadYield();
-//			osThreadFlagsSet(motorSyncHandle, 0x0001U);
+			//			osThreadYield();
+			//			osThreadFlagsSet(motorSyncHandle, 0x0001U);
 
 			//			sprintf(msg, "Tick=%10lu\r\n", microTick);
 			//			HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
@@ -235,7 +235,7 @@ void StartDefaultTask(void *argument)
 			//			count++;
 			prev_tick = HAL_GetTick();
 		}
-//		osThreadYield();
+		//		osThreadYield();
 		//		if (HAL_OK == HAL_UART_Receive(&huart1, (uint8_t*)rxData, 1U, 3000UL))
 		//		{
 		//			HAL_UART_Transmit(&huart2, (uint8_t*)rxData, 1U, 0x0A);
@@ -283,7 +283,6 @@ void StartMotorSync(void *argument)
 	osStatus_t status = osError;
 	uint32_t prev_tick;
 	int8_t angle = 0;
-	Robot_Direction direction_flag = FORWARD;
 
 	osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
 	osThreadYield();
@@ -292,25 +291,21 @@ void StartMotorSync(void *argument)
 	/* Infinite loop */
 	for(;;)
 	{
-		reactToAccel_parallel(&direction_flag, &angle);
-		if ((HAL_GetTick() - prev_tick) >= 100UL)
+		reactToAccel_parallel(&angle);
+		if ((HAL_GetTick() - prev_tick) >= 10UL)
 		{
-//			osThreadFlagsSet(defaultTaskHandle, 0x0001U);
-//			osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
+			//			osThreadFlagsSet(defaultTaskHandle, 0x0001U);
+			//			osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
 			status = osMessageQueueGet(myQueue01Handle, &angle, NULL, 100U);
-//			osThreadYield();
-//			osThreadFlagsSet(defaultTaskHandle, 0x0001U);
+			//			osThreadYield();
+			//			osThreadFlagsSet(defaultTaskHandle, 0x0001U);
 			if (status == osOK)
-			{
-				if (angle >= 0)
-					direction_flag = FORWARD;
-				else
-					direction_flag = BACKWARD;
-//				HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-			}
+				HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+			else
+				HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 			prev_tick = HAL_GetTick();
 		}
-//		osThreadYield();
+		//		osThreadYield();
 
 	}
 	/* USER CODE END StartMotorSync */

@@ -19,7 +19,8 @@ typedef enum
 {
 	ONE_PHASE		= 0U,
 	TWO_PHASE		= 1U,
-	ONETWO_PHASE	= 2U
+	ONETWO_PHASE	= 2U,
+	THREE_PHASE	= 3U
 } Motor_Mode;
 
 typedef enum
@@ -33,7 +34,8 @@ typedef enum
 typedef enum
 {
 	FORWARD		= 0U,
-	BACKWARD		= 1U
+	BACKWARD		= 1U,
+	STOP			= 2U
 } Robot_Direction;
 
 void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
@@ -55,12 +57,18 @@ void step_AB(uint8_t step_delay_dynamic);
 void step_aB(uint8_t step_delay_dynamic);
 void step_ab(uint8_t step_delay_dynamic);
 void step_Ab(uint8_t step_delay_dynamic);
+void step_ABa(uint8_t step_delay_dynamic);
+void step_Bab(uint8_t step_delay_dynamic);
+void step_abA(uint8_t step_delay_dynamic);
+void step_bAB(uint8_t step_delay_dynamic);
+
 void step_reset(void);
 
 void unipolar_parallel_sequence_onePhase(uint8_t step_delay_dynamic);
 void unipolar_parallel_sequence_twoPhase(uint8_t step_delay_dynamic);
 void unipolar_parallel_sequence_onetwoPhase(uint8_t step_delay_dynamic);
+void unipolar_parallel_sequence_threePhase(uint8_t step_delay_dynamic);
 
-void reactToAccel_parallel(Robot_Direction);
+void reactToAccel_parallel(int8_t*);
 
 #endif /* STEPPERMOTOR_H_ */
