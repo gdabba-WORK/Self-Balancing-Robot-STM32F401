@@ -61,6 +61,7 @@ MPU6050_int16_t acc, gyro;
 MPU6050_int32_t diffacc = {0, 0, 0};
 MPU6050_int32_t diffgyro = {0, 0, 0};
 int16_t tmpr;
+uint32_t sync_period = 250UL;
 
 
 /* USER CODE END Variables */
@@ -154,11 +155,12 @@ void MX_FREERTOS_Init(void) {
 void StartDefaultTask(void *argument)
 {
 	/* USER CODE BEGIN StartDefaultTask */
-	//	char msg[100];
+//	char msg[50];
 	osStatus_t status = osError;
 	uint32_t prev_tick;
+//	uint32_t prev_tick2;
 	int8_t angle = 0;
-	//	uint16_t count = 0;
+//	uint32_t count = 0;
 
 	MPU6050_Init(MPU6050_DLPF_BW_42);
 	MPU6050_InitOffset(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
@@ -167,6 +169,7 @@ void StartDefaultTask(void *argument)
 	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
 	osThreadFlagsSet(motorSyncHandle, 0x0001U);
 	prev_tick = HAL_GetTick();
+//	prev_tick2 = HAL_GetTick();
 	initDT();
 	/* Infinite loop */
 	for(;;)
@@ -189,6 +192,7 @@ void StartDefaultTask(void *argument)
 		calcAccelYPR();
 		calcGyroYPR();
 		calcFilteredYPR(&angle);
+//		count++;
 		//		sprintf(msg, "status=%d\r\n", status);
 		//		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
 
@@ -196,12 +200,12 @@ void StartDefaultTask(void *argument)
 		//		sprintf(msg, "{\"C\":%d,\"Y\":%ld}\r\n", ++count, diffacc.Y);
 		//		HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 
-
-		if ((HAL_GetTick() - prev_tick) >= 10UL)
+		if ((HAL_GetTick() - prev_tick) >= sync_period)
 		{
 			//			osThreadFlagsSet(motorSyncHandle, 0x0001U);
 			//			osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
 			status = osMessageQueuePut(myQueue01Handle, &angle, 0U, 100U);
+
 			//			osThreadYield();
 			//			osThreadFlagsSet(motorSyncHandle, 0x0001U);
 
@@ -235,6 +239,13 @@ void StartDefaultTask(void *argument)
 			//			count++;
 			prev_tick = HAL_GetTick();
 		}
+
+//		if ((HAL_GetTick() - prev_tick2) >= 10000UL)
+//		{
+//			sprintf(msg, "%lu\r\n", count);
+//			HAL_UART_Transmit(&huart2, msg, strlen(msg), 3000UL);
+//			prev_tick2 = HAL_GetTick();
+//		}
 		//		osThreadYield();
 		//		if (HAL_OK == HAL_UART_Receive(&huart1, (uint8_t*)rxData, 1U, 3000UL))
 		//		{
@@ -282,17 +293,22 @@ void StartMotorSync(void *argument)
 	/* USER CODE BEGIN StartMotorSync */
 	osStatus_t status = osError;
 	uint32_t prev_tick;
+//	uint32_t prev_tick2;
+//	uint32_t count = 0;
+//	char msg[50];
 	int8_t angle = 0;
 
 	osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
 	osThreadYield();
 
 	prev_tick = HAL_GetTick();
+//	prev_tick2 = HAL_GetTick();
 	/* Infinite loop */
 	for(;;)
 	{
 		reactToAccel_parallel(&angle);
-		if ((HAL_GetTick() - prev_tick) >= 10UL)
+//		count++;
+		if ((HAL_GetTick() - prev_tick) >= sync_period)
 		{
 			//			osThreadFlagsSet(defaultTaskHandle, 0x0001U);
 			//			osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
@@ -305,8 +321,12 @@ void StartMotorSync(void *argument)
 				HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 			prev_tick = HAL_GetTick();
 		}
-		//		osThreadYield();
-
+//		if ((HAL_GetTick() - prev_tick2) >= 10000UL)
+//		{
+//			sprintf(msg, "%lu\r\n", count);
+//			HAL_UART_Transmit(&huart2, msg, strlen(msg), 3000UL);
+//			prev_tick2 = HAL_GetTick();
+//		}
 	}
 	/* USER CODE END StartMotorSync */
 }

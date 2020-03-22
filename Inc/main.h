@@ -106,7 +106,10 @@ void Error_Handler(void);
 #define SM2EN_Pin GPIO_PIN_5
 #define SM2EN_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
-
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+void HAL_Delay(uint32_t Delay);
+uint32_t MY_GetTick();
+void MY_Delay(uint32_t step_delay);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

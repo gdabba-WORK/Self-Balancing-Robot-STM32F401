@@ -38,6 +38,8 @@ typedef enum
 	STOP			= 2U
 } Robot_Direction;
 
+void HAL_Delay(uint32_t Delay);
+
 void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
 		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_);
 void bigStepper_forward_sequence2(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
@@ -49,26 +51,26 @@ void bigStepper_slower(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA
 void reactToAccel(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
 		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_);
 
-void step_A(uint8_t step_delay_dynamic);
-void step_B(uint8_t step_delay_dynamic);
-void step_a(uint8_t step_delay_dynamic);
-void step_b(uint8_t step_delay_dynamic);
-void step_AB(uint8_t step_delay_dynamic);
-void step_aB(uint8_t step_delay_dynamic);
-void step_ab(uint8_t step_delay_dynamic);
-void step_Ab(uint8_t step_delay_dynamic);
-void step_ABa(uint8_t step_delay_dynamic);
-void step_Bab(uint8_t step_delay_dynamic);
-void step_abA(uint8_t step_delay_dynamic);
-void step_bAB(uint8_t step_delay_dynamic);
+void step_A(uint32_t step_delay);
+void step_B(uint32_t step_delay);
+void step_a(uint32_t step_delay);
+void step_b(uint32_t step_delay);
+void step_AB(uint32_t step_delay);
+void step_aB(uint32_t step_delay);
+void step_ab(uint32_t step_delay);
+void step_Ab(uint32_t step_delay);
+void step_ABa(uint32_t step_delay);
+void step_Bab(uint32_t step_delay);
+void step_abA(uint32_t step_delay);
+void step_bAB(uint32_t step_delay);
+void step_reset(uint32_t step_delay);
 
-void step_reset(void);
+void unipolar_parallel_sequence_onePhase(uint32_t step_delay);
+void unipolar_parallel_sequence_twoPhase(uint32_t step_delay);
+void unipolar_parallel_sequence_onetwoPhase(uint32_t step_delay);
+void unipolar_parallel_sequence_threePhase(uint32_t step_delay);
 
-void unipolar_parallel_sequence_onePhase(uint8_t step_delay_dynamic);
-void unipolar_parallel_sequence_twoPhase(uint8_t step_delay_dynamic);
-void unipolar_parallel_sequence_onetwoPhase(uint8_t step_delay_dynamic);
-void unipolar_parallel_sequence_threePhase(uint8_t step_delay_dynamic);
-
-void reactToAccel_parallel(int8_t*);
+void reactToAccel_parallel(int8_t* angle);
+void reactToAngle(int8_t* angle);
 
 #endif /* STEPPERMOTOR_H_ */
