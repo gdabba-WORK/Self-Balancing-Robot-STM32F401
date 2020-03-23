@@ -10,15 +10,15 @@
 extern MPU6050_int32_t diffacc;
 extern uint32_t microTick2;
 
-int8_t boundary = 2;
+int8_t boundary = 1;
 uint8_t step = 0U;
-uint16_t step_max = 40U;
+int16_t step_max = 32;
 uint32_t step_delay_static = 1000UL;
 uint32_t step_delay_dynamic = 5UL;
 //uint32_t step_delay = 2020UL;
 
-uint32_t step_delay_high = 3000UL;
-uint32_t step_delay_low = 1000UL;
+uint32_t step_delay_high = 3213UL;
+uint32_t step_delay_low = 3000UL;
 float alpha = 0.0F;
 
 Robot_Direction direction_flag = STOP;
@@ -483,7 +483,7 @@ void reactToAccel_parallel(int8_t* angle)
 	//	static uint8_t step_delay_dynamic = 10U;
 	static Robot_Direction prev_direction_flag = STOP;
 	static int8_t prev_angle = 0;
-	static uint16_t step_remain = 0U;
+	static int16_t step_remain = 0U;
 	static uint32_t step_delay = 1000UL;
 
 	if (prev_angle != (*angle))
@@ -518,7 +518,7 @@ void reactToAccel_parallel(int8_t* angle)
 	}
 
 
-	if (step_remain > 0U)
+	if (step_remain > 0)
 	{
 		if (direction_flag == STOP)
 			step_reset(step_delay);
@@ -561,12 +561,15 @@ void reactToAngle(int8_t* angle)
 {
 	static Robot_Direction prev_direction_flag = STOP;
 	static int8_t prev_angle = 0;
-	static uint16_t step_remain = 0U;
+	static int16_t step_remain = -1;
 	static uint32_t step_delay = 0UL;
-	static float alpha = 0.0F;
-	if (prev_angle != (*angle))
+//	static float alpha = 0.0F;
+
+	if (step_remain < 0)
 	{
-		prev_angle = (*angle);
+		//		if (prev_angle != (*angle))
+		//		{
+		//			prev_angle = (*angle);
 		//			step_delay_static = 0U;
 
 		if ((*angle) >= -(boundary) && (*angle) <= (boundary))
@@ -586,24 +589,46 @@ void reactToAngle(int8_t* angle)
 			//				step_delay_static = (uint8_t)(4 - abs(*angle)/2);
 		}
 		//			step_delay_dynamic = step_delay_static;
-		if (prev_direction_flag != direction_flag)
-		{
-			prev_direction_flag = direction_flag;
-			//			step_delay_dynamic = 5U;
-			// 내용 추가하기
-		}
+
+		//			if (prev_direction_flag != direction_flag)
+		//			{
+		//				prev_direction_flag = direction_flag;
+		//				//			step_delay_dynamic = 5U;
+		//				// 내용 추가하기
+		//			}
 		step_remain = step_max;
 		step_delay = step_delay_high;
 		alpha = getAlpha();
+		//		}
 	}
 
-
-	if (step_remain > 0U)
+	else if (step_remain >= 0)
 	{
 		if (direction_flag == STOP)
-			step_reset(step_delay);
+		{
+			switch (mode_flag) {
+			case ONE_PHASE :
+				unipolar_parallel_sequence_onePhase(0UL);
+				break;
+			case TWO_PHASE :
+				unipolar_parallel_sequence_twoPhase(0UL);
+				break;
+			case ONETWO_PHASE :
+				unipolar_parallel_sequence_onetwoPhase(0UL);
+				break;
+			case THREE_PHASE :
+				unipolar_parallel_sequence_threePhase(0UL);
+				break;
+			}
+			step_remain = -1;
+		}
 		else
 		{
+			if (direction_flag == FORWARD)
+				step++;
+			else if (direction_flag == BACKWARD)
+				step--;
+
 			switch (mode_flag) {
 			case ONE_PHASE :
 				unipolar_parallel_sequence_onePhase(step_delay);
@@ -619,15 +644,11 @@ void reactToAngle(int8_t* angle)
 				break;
 			}
 
-			if (direction_flag == FORWARD)
-				step++;
-			else if (direction_flag == BACKWARD)
-				step--;
 
 			//			if (step_delay_dynamic > step_delay_static)
 			//				step_delay_dynamic--;
+			step_remain--;
+			step_delay = (uint32_t)(alpha * (float)(step_remain - (step_max/2))*(float)(step_remain - (step_max/2))) + step_delay_low;
 		}
-		step_delay = (uint32_t)(alpha * (float)(step_remain - (step_max/2))*(float)(step_remain - (step_max/2))) + step_delay_low;
-		step_remain--;
 	}
 }

@@ -50,13 +50,15 @@
 /* USER CODE BEGIN PV */
 uint8_t rx_data = 0;
 extern uint32_t step_delay_static, step_delay_dynamic;
-extern uint16_t step_max;
+extern uint32_t step_delay_low, step_delay_high;
+extern int16_t step_max;
 extern Robot_Direction direction_flag;
 extern Motor_Mode mode_flag;
 extern Motor_State state_flag;
 extern uint32_t sync_period;
 extern int8_t boundary;
 uint32_t microTick = 0UL;
+extern float alpha;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -113,6 +115,7 @@ int main(void)
 	//	char msg[20] = "Hello World!\n\r";
 	HAL_UART_Receive_IT(&huart1, &rx_data, 1);
 	HAL_TIM_Base_Start_IT(&htim10);
+
 	/* USER CODE END 2 */
 	/* Init scheduler */
 	osKernelInitialize();
@@ -208,8 +211,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			//			state_flag = LEFT_MOTOR;
 			break;
 		case '2' :
-			sprintf(msg, "step_max=%10u\r\n", step_max);
-			HAL_UART_Transmit(&huart1, msg, strlen(msg), 3000UL);
+			sprintf(msg, "step_max=%10d\r\n", step_max);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			//			state_flag = BOTH_MOTOR;
 			break;
 		case '3' :
@@ -217,33 +220,32 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			//			state_flag = RIGHT_MOTOR;
 			break;
 		case '4' :
-			step_delay_dynamic = step_delay_dynamic - 1UL;
+			step_delay_low = step_delay_low - 100UL;
 			//			step_delay_static = 0U;
 			//			step_delay_dynamic = 4U;
 			break;
 		case '5' :
-			sprintf(msg, "step_delay_dynamic=%10lu\r\n", step_delay_dynamic);
-			HAL_UART_Transmit(&huart1, msg, strlen(msg), 3000UL);
+			sprintf(msg, "step_delay_low=%10lu\r\n", step_delay_low);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			//			step_delay_static = 1U;
 			//			step_delay_dynamic = 4U;
 			break;
 		case '6' :
-			step_delay_dynamic = step_delay_dynamic + 1UL;
-
+			step_delay_low = step_delay_low + 100UL;
 			//			step_delay_static = 2U;
 			//			step_delay_dynamic = 4U;
 			break;
 		case '7' :
-			step_delay_static = step_delay_static - 10UL;
+			step_delay_high = step_delay_high - 100UL;
 			//			mode_flag = ONE_PHASE;
 			break;
 		case '8' :
-			sprintf(msg, "step_delay_static=%10lu\r\n", step_delay_static);
-			HAL_UART_Transmit(&huart1, msg, strlen(msg), 3000UL);
+			sprintf(msg, "step_delay_high=%10lu\r\n", step_delay_high);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			//			mode_flag = TWO_PHASE;
 			break;
 		case '9' :
-			step_delay_static = step_delay_static + 10UL;
+			step_delay_high = step_delay_high + 100UL;
 			//			mode_flag = ONETWO_PHASE;
 			break;
 		case '.' :
@@ -255,17 +257,22 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			break;
 		case '+' :
 			sprintf(msg, "sync_period=%10lu\r\n", sync_period);
-			HAL_UART_Transmit(&huart1, msg, strlen(msg), 3000UL);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '/' :
 			boundary = boundary - 1;
 			break;
 		case '*' :
 			sprintf(msg, "boundary=%10d\r\n", boundary);
-			HAL_UART_Transmit(&huart1, msg, strlen(msg), 3000UL);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '-' :
 			boundary = boundary + 1;
+			break;
+		case 'k' :
+			sprintf(msg, "alpha=%.10f\r\n", alpha);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
 		case 'a' :
 			state_flag = RIGHT_MOTOR;
 			break;

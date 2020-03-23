@@ -61,7 +61,7 @@ MPU6050_int16_t acc, gyro;
 MPU6050_int32_t diffacc = {0, 0, 0};
 MPU6050_int32_t diffgyro = {0, 0, 0};
 int16_t tmpr;
-uint32_t sync_period = 250UL;
+uint32_t sync_period = 100UL;
 
 
 /* USER CODE END Variables */
@@ -306,7 +306,7 @@ void StartMotorSync(void *argument)
 	/* Infinite loop */
 	for(;;)
 	{
-		reactToAccel_parallel(&angle);
+		reactToAngle(&angle);
 //		count++;
 		if ((HAL_GetTick() - prev_tick) >= sync_period)
 		{
