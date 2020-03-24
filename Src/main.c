@@ -58,7 +58,10 @@ extern Motor_State state_flag;
 extern uint32_t sync_period;
 extern int8_t boundary;
 uint32_t microTick = 0UL;
-extern float alpha;
+extern float alpha_former;
+extern float alpha_latter;
+extern float coefficient;
+extern int8_t angle;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -203,11 +206,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	{
 		switch (rx_data) {
 		case '0' :
-			sync_period = sync_period - 10UL;
+			if ((sync_period - 5UL) > 0UL)
+				sync_period = sync_period - 5UL;
 			//			state_flag = NO_MOTOR;
 			break;
 		case '1' :
-			step_max = step_max - 2U;
+			if ((step_max - 4U) > 0U)
+				step_max = step_max - 4U;
 			//			state_flag = LEFT_MOTOR;
 			break;
 		case '2' :
@@ -216,11 +221,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			//			state_flag = BOTH_MOTOR;
 			break;
 		case '3' :
-			step_max = step_max + 2U;
+			step_max = step_max + 4U;
 			//			state_flag = RIGHT_MOTOR;
 			break;
 		case '4' :
-			step_delay_low = step_delay_low - 100UL;
+			step_delay_low = step_delay_low - 10UL;
 			//			step_delay_static = 0U;
 			//			step_delay_dynamic = 4U;
 			break;
@@ -231,12 +236,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			//			step_delay_dynamic = 4U;
 			break;
 		case '6' :
-			step_delay_low = step_delay_low + 100UL;
+			if ((step_delay_low + 10UL) < step_delay_high)
+				step_delay_low = step_delay_low + 10UL;
 			//			step_delay_static = 2U;
 			//			step_delay_dynamic = 4U;
 			break;
 		case '7' :
-			step_delay_high = step_delay_high - 100UL;
+			if ((step_delay_high - 10UL) > step_delay_low)
+				step_delay_high = step_delay_high - 10UL;
 			//			mode_flag = ONE_PHASE;
 			break;
 		case '8' :
@@ -245,11 +252,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			//			mode_flag = TWO_PHASE;
 			break;
 		case '9' :
-			step_delay_high = step_delay_high + 100UL;
+			step_delay_high = step_delay_high + 10UL;
 			//			mode_flag = ONETWO_PHASE;
 			break;
 		case '.' :
-			sync_period = sync_period + 10UL;
+			sync_period = sync_period + 5UL;
 			//			if (direction_flag == FORWARD)
 			//				direction_flag = BACKWARD;
 			//			else
@@ -260,7 +267,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '/' :
-			boundary = boundary - 1;
+			if ((boundary - 1) > -1)
+				boundary = boundary - 1;
 			break;
 		case '*' :
 			sprintf(msg, "boundary=%10d\r\n", boundary);
@@ -269,8 +277,28 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		case '-' :
 			boundary = boundary + 1;
 			break;
+		case 'j' :
+			sprintf(msg, "coefficient=%.2f\r\n", coefficient);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
 		case 'k' :
-			sprintf(msg, "alpha=%.10f\r\n", alpha);
+			sprintf(msg, "alpha_former=%.10f\r\n", alpha_former);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
+		case 'l' :
+			sprintf(msg, "alpha_latter=%.10f\r\n", alpha_latter);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
+		case 'n' :
+			if (coefficient - 0.01F > 0.0F)
+				coefficient = coefficient - 0.01F;
+			break;
+		case 'm' :
+			if (coefficient + 0.01F <= 1.0F)
+				coefficient = coefficient + 0.01F;
+			break;
+		case 'o' :
+			sprintf(msg, "angle=%10d\r\n", angle);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case 'a' :

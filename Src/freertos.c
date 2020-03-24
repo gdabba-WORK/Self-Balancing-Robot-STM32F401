@@ -61,7 +61,8 @@ MPU6050_int16_t acc, gyro;
 MPU6050_int32_t diffacc = {0, 0, 0};
 MPU6050_int32_t diffgyro = {0, 0, 0};
 int16_t tmpr;
-uint32_t sync_period = 100UL;
+uint32_t sync_period = 30UL;
+int8_t angle = 0;
 
 
 /* USER CODE END Variables */
@@ -159,7 +160,7 @@ void StartDefaultTask(void *argument)
 	osStatus_t status = osError;
 	uint32_t prev_tick;
 //	uint32_t prev_tick2;
-	int8_t angle = 0;
+	int8_t _angle = 0;
 //	uint32_t count = 0;
 
 	MPU6050_Init(MPU6050_DLPF_BW_42);
@@ -191,7 +192,7 @@ void StartDefaultTask(void *argument)
 		calcDT();
 		calcAccelYPR();
 		calcGyroYPR();
-		calcFilteredYPR(&angle);
+		calcFilteredYPR(&_angle);
 //		count++;
 		//		sprintf(msg, "status=%d\r\n", status);
 		//		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
@@ -204,7 +205,7 @@ void StartDefaultTask(void *argument)
 		{
 			//			osThreadFlagsSet(motorSyncHandle, 0x0001U);
 			//			osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
-			status = osMessageQueuePut(myQueue01Handle, &angle, 0U, 100U);
+			status = osMessageQueuePut(myQueue01Handle, &_angle, 0U, 100U);
 
 			//			osThreadYield();
 			//			osThreadFlagsSet(motorSyncHandle, 0x0001U);
@@ -296,7 +297,7 @@ void StartMotorSync(void *argument)
 //	uint32_t prev_tick2;
 //	uint32_t count = 0;
 //	char msg[50];
-	int8_t angle = 0;
+//	int8_t angle = 0;
 
 	osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
 	osThreadYield();

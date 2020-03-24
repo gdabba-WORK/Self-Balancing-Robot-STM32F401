@@ -10,16 +10,19 @@
 extern MPU6050_int32_t diffacc;
 extern uint32_t microTick2;
 
-int8_t boundary = 1;
+int8_t boundary = 3;
 uint8_t step = 0U;
-int16_t step_max = 32;
+int16_t step_max = 84;
 uint32_t step_delay_static = 1000UL;
 uint32_t step_delay_dynamic = 5UL;
 //uint32_t step_delay = 2020UL;
 
-uint32_t step_delay_high = 3213UL;
-uint32_t step_delay_low = 3000UL;
-float alpha = 0.0F;
+uint32_t step_delay_low = 3370UL;
+uint32_t step_delay_high = 5000UL;
+
+float alpha_former = 0.0F;
+float alpha_latter = 0.0F;
+float coefficient = 1.00F;
 
 Robot_Direction direction_flag = STOP;
 Motor_Mode mode_flag = ONETWO_PHASE;
@@ -554,7 +557,7 @@ void reactToAccel_parallel(int8_t* angle)
 
 float getAlpha()
 {
-	return ((float)(step_delay_high - step_delay_low) * 4.0F / (float)(step_max * step_max));
+	return ((float)(step_delay_high - step_delay_low) * 16.0F / (float)(step_max * step_max));
 }
 
 void reactToAngle(int8_t* angle)
@@ -563,7 +566,8 @@ void reactToAngle(int8_t* angle)
 	static int8_t prev_angle = 0;
 	static int16_t step_remain = -1;
 	static uint32_t step_delay = 0UL;
-//	static float alpha = 0.0F;
+	char msg[50];
+	//	static float alpha = 0.0F;
 
 	if (step_remain < 0)
 	{
@@ -596,9 +600,15 @@ void reactToAngle(int8_t* angle)
 		//				//			step_delay_dynamic = 5U;
 		//				// 내용 추가하기
 		//			}
+		if (direction_flag != STOP)
+		{
+			sprintf(msg, "%-10d%s\r\n", *angle, (direction_flag == FORWARD) ? "FORWARD" : "BACKWARD");
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+		}
 		step_remain = step_max;
 		step_delay = step_delay_high;
-		alpha = getAlpha();
+		alpha_former = getAlpha();
+		alpha_latter = alpha_former * coefficient;
 		//		}
 	}
 
@@ -648,7 +658,10 @@ void reactToAngle(int8_t* angle)
 			//			if (step_delay_dynamic > step_delay_static)
 			//				step_delay_dynamic--;
 			step_remain--;
-			step_delay = (uint32_t)(alpha * (float)(step_remain - (step_max/2))*(float)(step_remain - (step_max/2))) + step_delay_low;
+			if (step_remain > (step_max * 3 / 4))
+				step_delay = (uint32_t)(alpha_former * (float)(step_remain - (step_max * 3 / 4))*(float)(step_remain - (step_max * 3 / 4))) + step_delay_low;
+			else
+				step_delay = (uint32_t)(alpha_latter * (float)(step_remain - (step_max * 3 / 4))*(float)(step_remain - (step_max * 3 / 4))) + step_delay_low;
 		}
 	}
 }

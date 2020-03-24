@@ -25,7 +25,6 @@ float_t accel_xz, accel_yz;
 MPU6050_float_t tmp_angle = {0, 0, 0};
 MPU6050_float_t filtered_angle = {0, 0, 0};
 
-int8_t angle = 0;
 
 const float_t RADIANS_TO_DEGREES = 180 / 3.14159F;
 const float_t GYROXYZ_TO_DEGREES_PER_SEC = 131.0F;
