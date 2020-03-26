@@ -9,24 +9,39 @@
 
 extern MPU6050_int32_t diffacc;
 extern uint32_t microTick2;
+extern MPU6050_float_t accel_angle;
+extern MPU6050_float_t gyro_angle;
+extern MPU6050_float_t filtered_angle;
+extern int8_t print_flag;
 
-int8_t boundary = 3;
+float boundary_inner = 1.0F;
+float boundary_outer = 3.0F;
 uint8_t step = 0U;
-int16_t step_max = 84;
+int16_t step_max = 24;
 uint32_t step_delay_static = 1000UL;
 uint32_t step_delay_dynamic = 5UL;
 //uint32_t step_delay = 2020UL;
 
-uint32_t step_delay_low = 3370UL;
-uint32_t step_delay_high = 5000UL;
+uint32_t step_delay_low = 3200UL;
+uint32_t step_delay_high = 10000UL;
 
-float alpha_former = 0.0F;
-float alpha_latter = 0.0F;
-float coefficient = 1.00F;
+uint32_t step_delay = 0UL;
+uint32_t prev_step_delay = 0UL;
+uint32_t step_delay_total = 0UL;
+
+float alpha_former = 1.0F;
+float alpha_latter = 0.9F;
+float coefficient = 0.9F;
 
 Robot_Direction direction_flag = STOP;
+Robot_Direction prev_direction_flag = STOP;
+float prev_gyro_angle = 0.0F;
+
 Motor_Mode mode_flag = ONETWO_PHASE;
 Motor_State state_flag = BOTH_MOTOR;
+
+Robot_Drive drive_flag = HALT;
+Robot_Drive prev_drive_flag = HALT;
 
 void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
 		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_)
@@ -481,92 +496,93 @@ void unipolar_parallel_sequence_threePhase(uint32_t step_delay)
 	}
 }
 
-void reactToAccel_parallel(int8_t* angle)
-{
-	//	static uint8_t step_delay_dynamic = 10U;
-	static Robot_Direction prev_direction_flag = STOP;
-	static int8_t prev_angle = 0;
-	static int16_t step_remain = 0U;
-	static uint32_t step_delay = 1000UL;
+//void reactToAccel_parallel(int8_t* angle)
+//{
+//	//	static uint8_t step_delay_dynamic = 10U;
+//	static Robot_Direction prev_direction_flag = STOP;
+//	static int8_t prev_angle = 0;
+//	static int16_t step_remain = 0U;
+//	static uint32_t step_delay = 1000UL;
+//
+//	if (prev_angle != (*angle))
+//	{
+//		prev_angle = (*angle);
+//		//			step_delay_static = 0U;
+//
+//		if ((*angle) >= -(boundary) && (*angle) <= (boundary))
+//			direction_flag = STOP;
+//		else if ((*angle) > (boundary))
+//		{
+//			direction_flag = FORWARD;
+//			//			if ((*angle) <= 10)
+//			//				step_delay_static = 1U;
+//			//				step_delay_static = (uint8_t)(4 - abs(*angle)/2);
+//		}
+//		else if((*angle) < -(boundary))
+//		{
+//			direction_flag = BACKWARD;
+//			//			if ((*angle) >= -10)
+//			//				step_delay_static = 1U;
+//			//				step_delay_static = (uint8_t)(4 - abs(*angle)/2);
+//		}
+//		//			step_delay_dynamic = step_delay_static;
+//		if (prev_direction_flag != direction_flag)
+//		{
+//			prev_direction_flag = direction_flag;
+//			//			step_delay_dynamic = 5U;
+//		}
+//		step_remain = step_max;
+//		step_delay = step_delay_static;
+//	}
+//
+//
+//	if (step_remain > 0)
+//	{
+//		if (direction_flag == STOP)
+//			step_reset(step_delay);
+//		else
+//		{
+//			switch (mode_flag) {
+//			case ONE_PHASE :
+//				unipolar_parallel_sequence_onePhase(step_delay);
+//				break;
+//			case TWO_PHASE :
+//				unipolar_parallel_sequence_twoPhase(step_delay);
+//				break;
+//			case ONETWO_PHASE :
+//				unipolar_parallel_sequence_onetwoPhase(step_delay);
+//				break;
+//			case THREE_PHASE :
+//				unipolar_parallel_sequence_threePhase(step_delay);
+//				break;
+//			}
+//
+//			if (direction_flag == FORWARD)
+//				step++;
+//			else if (direction_flag == BACKWARD)
+//				step--;
+//
+//			//			if (step_delay_dynamic > step_delay_static)
+//			//				step_delay_dynamic--;
+//		}
+//		step_remain--;
+//		step_delay+=step_delay_dynamic;
+//	}
+//}
 
-	if (prev_angle != (*angle))
-	{
-		prev_angle = (*angle);
-		//			step_delay_static = 0U;
-
-		if ((*angle) >= -(boundary) && (*angle) <= (boundary))
-			direction_flag = STOP;
-		else if ((*angle) > (boundary))
-		{
-			direction_flag = FORWARD;
-			//			if ((*angle) <= 10)
-			//				step_delay_static = 1U;
-			//				step_delay_static = (uint8_t)(4 - abs(*angle)/2);
-		}
-		else if((*angle) < -(boundary))
-		{
-			direction_flag = BACKWARD;
-			//			if ((*angle) >= -10)
-			//				step_delay_static = 1U;
-			//				step_delay_static = (uint8_t)(4 - abs(*angle)/2);
-		}
-		//			step_delay_dynamic = step_delay_static;
-		if (prev_direction_flag != direction_flag)
-		{
-			prev_direction_flag = direction_flag;
-			//			step_delay_dynamic = 5U;
-		}
-		step_remain = step_max;
-		step_delay = step_delay_static;
-	}
-
-
-	if (step_remain > 0)
-	{
-		if (direction_flag == STOP)
-			step_reset(step_delay);
-		else
-		{
-			switch (mode_flag) {
-			case ONE_PHASE :
-				unipolar_parallel_sequence_onePhase(step_delay);
-				break;
-			case TWO_PHASE :
-				unipolar_parallel_sequence_twoPhase(step_delay);
-				break;
-			case ONETWO_PHASE :
-				unipolar_parallel_sequence_onetwoPhase(step_delay);
-				break;
-			case THREE_PHASE :
-				unipolar_parallel_sequence_threePhase(step_delay);
-				break;
-			}
-
-			if (direction_flag == FORWARD)
-				step++;
-			else if (direction_flag == BACKWARD)
-				step--;
-
-			//			if (step_delay_dynamic > step_delay_static)
-			//				step_delay_dynamic--;
-		}
-		step_remain--;
-		step_delay+=step_delay_dynamic;
-	}
-}
-
-float getAlpha()
+float getAlpha(void)
 {
 	return ((float)(step_delay_high - step_delay_low) * 16.0F / (float)(step_max * step_max));
 }
 
-void reactToAngle(int8_t* angle)
+void reactToAngle(void)
 {
-	static Robot_Direction prev_direction_flag = STOP;
-	static int8_t prev_angle = 0;
+	//	static Robot_Direction prev_direction_flag = STOP;
+	//	static int8_t prev_angle = 0;
 	static int16_t step_remain = -1;
 	static uint32_t step_delay = 0UL;
-	char msg[50];
+	static uint32_t step_delay_total = 0UL;
+	char msg[150];
 	//	static float alpha = 0.0F;
 
 	if (step_remain < 0)
@@ -576,16 +592,16 @@ void reactToAngle(int8_t* angle)
 		//			prev_angle = (*angle);
 		//			step_delay_static = 0U;
 
-		if ((*angle) >= -(boundary) && (*angle) <= (boundary))
+		if ((filtered_angle.x) >= -(boundary_outer) && (filtered_angle.x) <= (boundary_outer))
 			direction_flag = STOP;
-		else if ((*angle) > (boundary))
+		else if ((filtered_angle.x) > (boundary_outer))
 		{
 			direction_flag = FORWARD;
 			//			if ((*angle) <= 10)
 			//				step_delay_static = 1U;
 			//				step_delay_static = (uint8_t)(4 - abs(*angle)/2);
 		}
-		else if((*angle) < -(boundary))
+		else if((filtered_angle.x) < -(boundary_outer))
 		{
 			direction_flag = BACKWARD;
 			//			if ((*angle) >= -10)
@@ -600,19 +616,27 @@ void reactToAngle(int8_t* angle)
 		//				//			step_delay_dynamic = 5U;
 		//				// 내용 추가하기
 		//			}
-		if (direction_flag != STOP)
+		if (print_flag)
 		{
-			sprintf(msg, "%-10d%s\r\n", *angle, (direction_flag == FORWARD) ? "FORWARD" : "BACKWARD");
-			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			if (direction_flag != STOP)
+			{
+				//			sprintf(msg, "%-10d%s\r\n", *angle, (direction_flag == FORWARD) ? "FORWARD" : "BACKWARD");
+				//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+				sprintf(msg, "%-10s%10.6f\tf=%7.3f\ta=%7.3f\tg=%7.3f\r\n",
+						(direction_flag == FORWARD) ? "FORWARD" : "BACKWARD", (float)step_delay_total/1000000.0F,
+								filtered_angle.x, accel_angle.x, gyro_angle.x);
+				HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			}
 		}
 		step_remain = step_max;
 		step_delay = step_delay_high;
 		alpha_former = getAlpha();
 		alpha_latter = alpha_former * coefficient;
+		step_delay_total = 0UL;
 		//		}
 	}
 
-	else if (step_remain >= 0)
+	if (step_remain >= 0)
 	{
 		if (direction_flag == STOP)
 		{
@@ -662,6 +686,98 @@ void reactToAngle(int8_t* angle)
 				step_delay = (uint32_t)(alpha_former * (float)(step_remain - (step_max * 3 / 4))*(float)(step_remain - (step_max * 3 / 4))) + step_delay_low;
 			else
 				step_delay = (uint32_t)(alpha_latter * (float)(step_remain - (step_max * 3 / 4))*(float)(step_remain - (step_max * 3 / 4))) + step_delay_low;
+			step_delay_total = step_delay_total + step_delay;
 		}
+	}
+}
+
+uint32_t getStepDelay(void)
+{
+	uint32_t new_delay;
+
+	alpha_latter = alpha_former * coefficient;
+
+	if (drive_flag == HALT)
+	{
+		new_delay = step_delay_high;
+	}
+	else if (drive_flag == READY)
+	{
+//		if (prev_drive_flag == HALT)
+//			new_delay = step_delay_high;
+//		else
+			new_delay = (uint32_t)(alpha_latter * pow((sqrt(((float)(step_delay - step_delay_low)/alpha_latter) + 1.0F)), 2));
+//			new_delay = (uint32_t)(alpha_latter * pow((sqrt(((float)step_delay)/alpha_latter) + 1.0F), 2));
+	}
+	else if (drive_flag == RUN)
+	{
+		new_delay = (uint32_t)(alpha_former * pow((-sqrt(((float)(step_delay - step_delay_low)/alpha_former) + 1.0F)), 2));
+//		new_delay = (uint32_t)(alpha_former * pow((-sqrt(((float)step_delay)/alpha_former) + 1.0F), 2));
+	}
+
+	if (new_delay < step_delay_low)
+		return step_delay_low;
+	else if (new_delay > step_delay_high)
+		return step_delay_high;
+
+	return new_delay;
+}
+
+void reactToAngleGyro(void)
+{
+	char msg[150];
+
+	prev_direction_flag = direction_flag;
+	if (filtered_angle.x >= 0.0F)
+		direction_flag = FORWARD;
+	else
+		direction_flag = BACKWARD;
+
+	prev_drive_flag = drive_flag;
+	if (((filtered_angle.x) >= -(boundary_inner)) && ((filtered_angle.x) <= (boundary_inner)))
+		drive_flag = HALT;
+	else if ((filtered_angle.x >= -(boundary_outer)) && ((filtered_angle.x) <= (boundary_outer)))
+		drive_flag = READY;
+	else
+		drive_flag = RUN;
+
+	step_delay = getStepDelay();
+
+	if ((prev_drive_flag == HALT) && (drive_flag != HALT))
+	{
+		step_delay_total = 0UL;
+		step_delay_total = step_delay_total + step_delay;
+	}
+
+	if ((prev_drive_flag != HALT) && (drive_flag != HALT))
+	{
+		step_delay_total = step_delay_total + step_delay;
+	}
+	if (prev_drive_flag != HALT && drive_flag == HALT)
+	{
+		if (print_flag)
+		{
+			sprintf(msg, "step_delay_total=%10.6f\r\n", (float)step_delay_total/1000000.0F);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+		}
+	}
+
+	if (drive_flag == HALT)
+	{
+		unipolar_parallel_sequence_onetwoPhase(0UL);
+	}
+	else
+	{
+		if (direction_flag == FORWARD)
+			step++;
+		else if (direction_flag == BACKWARD)
+			step--;
+		unipolar_parallel_sequence_onetwoPhase(step_delay);
+		//		if (print_flag)
+		//		{
+		//			sprintf(msg, "%-10s\tf=%7.3f\ta=%7.3f\tg=%7.3f\r\n",
+		//					(direction_flag == FORWARD) ? "FORWARD" : "BACKWARD", filtered_angle.x, accel_angle.x, gyro_angle.x);
+		//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+		//		}
 	}
 }

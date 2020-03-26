@@ -37,7 +37,9 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 #include "stepperMotor.h"
+#include "complementary_filter.h"
 #include <stdlib.h>
+#include <math.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

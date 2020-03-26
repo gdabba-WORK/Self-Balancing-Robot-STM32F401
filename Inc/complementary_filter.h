@@ -9,12 +9,11 @@
 #define INC_COMPLEMENTARY_FILTER_H_
 
 #include "main.h"
-#include <math.h>
 
 typedef struct {
-	float_t x;
-	float_t y;
-	float_t z;
+	float x;
+	float y;
+	float z;
 } MPU6050_float_t;
 #endif /* INC_COMPLEMENTARY_FILTER_H_ */
 

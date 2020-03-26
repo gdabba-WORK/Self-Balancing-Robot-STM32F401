@@ -56,12 +56,17 @@ extern Robot_Direction direction_flag;
 extern Motor_Mode mode_flag;
 extern Motor_State state_flag;
 extern uint32_t sync_period;
-extern int8_t boundary;
+extern float boundary_outer;
 uint32_t microTick = 0UL;
 extern float alpha_former;
 extern float alpha_latter;
 extern float coefficient;
 extern int8_t angle;
+extern int8_t _angle;
+extern float dt;
+extern HAL_StatusTypeDef status;
+int8_t print_flag = 0;
+extern float ALPHA;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -267,39 +272,98 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '/' :
-			if ((boundary - 1) > -1)
-				boundary = boundary - 1;
+			if ((boundary_outer - 1.0F) > 0.0F)
+				boundary_outer = boundary_outer - 1.0F;
 			break;
 		case '*' :
-			sprintf(msg, "boundary=%10d\r\n", boundary);
+			sprintf(msg, "boundary_outer=%10.2f\r\n", boundary_outer);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '-' :
-			boundary = boundary + 1;
+			boundary_outer = boundary_outer + 1.0F;
 			break;
 		case 'j' :
 			sprintf(msg, "coefficient=%.2f\r\n", coefficient);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case 'k' :
-			sprintf(msg, "alpha_former=%.10f\r\n", alpha_former);
+			sprintf(msg, "alpha_former=%.2f\r\n", alpha_former);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case 'l' :
-			sprintf(msg, "alpha_latter=%.10f\r\n", alpha_latter);
+			sprintf(msg, "alpha_latter=%.2f\r\n", alpha_latter);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case 'n' :
-			if (coefficient - 0.01F > 0.0F)
+			if ((coefficient - 0.01F) > 0.0F)
 				coefficient = coefficient - 0.01F;
 			break;
 		case 'm' :
-			if (coefficient + 0.01F <= 1.0F)
+			if ((coefficient + 0.01F) <= 1.0F)
 				coefficient = coefficient + 0.01F;
 			break;
+		case 'u' :
+			if ((alpha_former - 0.1F) > 0.0F)
+				alpha_former = alpha_former - 0.1F;
+			break;
+		case 'i' :
+			if ((alpha_former + 0.1F) <= 200.0F)
+				alpha_former = alpha_former + 0.1F;
+			break;
 		case 'o' :
-			sprintf(msg, "angle=%10d\r\n", angle);
+			sprintf(msg, "angle=%10d\r\n", _angle);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
+		case 't' :
+			sprintf(msg, "dt=%.6f\r\n", dt);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
+		case 'e' :
+			sprintf(msg, "status=%s\r\n", (status == HAL_OK) ? "HAL_OK" :
+					(status == HAL_ERROR) ? "HAL_ERROR" :
+							(status == HAL_BUSY) ? "HAL_BUSY" : "HAL_TIMEOUT");
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
+		case 'p' :
+			print_flag = !(print_flag);
+			break;
+		case 'P' :
+			sprintf(msg, "step_max=%10d\r\n", step_max);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "step_delay_low=%10lu\r\n", step_delay_low);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "step_delay_high=%10lu\r\n", step_delay_high);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "sync_period=%10lu\r\n", sync_period);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "boundary_outer=%10.2f\r\n", boundary_outer);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "coefficient=%.2f\r\n", coefficient);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "alpha_former=%.2f\r\n", alpha_former);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "alpha_latter=%.2f\r\n", alpha_latter);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "dt=%.6f\r\n", dt);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "ALPHA=%.2f\r\n", ALPHA);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "status=%s\r\n", (status == HAL_OK) ? "HAL_OK" :
+					(status == HAL_ERROR) ? "HAL_ERROR" :
+							(status == HAL_BUSY) ? "HAL_BUSY" : "HAL_TIMEOUT");
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
+		case 'v' :
+			sprintf(msg, "ALPHA=%.2f\r\n", ALPHA);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
+		case 'c' :
+			if ((ALPHA - 0.01F) >= 0.00F)
+				ALPHA = ALPHA - 0.01F;
+			break;
+		case 'b' :
+			if ((ALPHA + 0.01F) <= 1.00F)
+				ALPHA = ALPHA + 0.01F;
 			break;
 		case 'a' :
 			state_flag = RIGHT_MOTOR;
@@ -332,22 +396,14 @@ void HAL_Delay(uint32_t Delay)
 {
 	uint32_t tickstart = HAL_GetTick();
 	uint32_t wait = Delay;
-	//	uint8_t count = 0;
-	//	char msg[20];
 	/* Add a freq to guarantee minimum wait */
 	if (wait < HAL_MAX_DELAY)
 	{
 		wait += (uint32_t)(uwTickFreq);
 	}
-	//	sprintf(msg, "start = %ld\nwait = %ld\n", tickstart, wait);
-	//	sprintf(msg, "%ld\n%ld\n", tickstart, wait);
-	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 0xFFFF);
 	while((HAL_GetTick() - tickstart) < wait)
 	{
-		//		printf("while() %d\n", ++count);
 	}
-	//	sprintf(msg, "end = %ld\n", HAL_GetTick());
-	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 0xFFFF);
 }
 
 uint32_t MY_GetTick()
@@ -378,7 +434,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	/* USER CODE BEGIN Callback 0 */
 	if (htim->Instance == TIM10) {
-		microTick+=10UL;
+		microTick+=100UL;
 	}
 	else
 		/* USER CODE END Callback 0 */

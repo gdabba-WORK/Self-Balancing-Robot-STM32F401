@@ -27,11 +27,19 @@ HAL_StatusTypeDef status;
 uint8_t MPU6050_ReadOneByte(uint8_t RegAddr)
 {
 	uint8_t Data = 0;
-	status = HAL_I2C_Mem_Read(&MPU6050_I2C_PORT,MPU6050_DEVICE_ADDR,RegAddr,1,&Data,1,3000UL);
+	char msg[50];
+	status = HAL_I2C_Mem_Read(&MPU6050_I2C_PORT, MPU6050_DEVICE_ADDR, RegAddr, 1, &Data, 1, 5000UL);
 	//	sprintf(msg, "MPU6050_ReadOneByte() : %u\r\n", status);
 	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 0xFFFF);
 	if (status != HAL_OK)
-		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+	{
+		//		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+		sprintf(msg, "Read status=%s\r\n", (status == HAL_OK) ? "HAL_OK" :
+				(status == HAL_ERROR) ? "HAL_ERROR" :
+						(status == HAL_BUSY) ? "HAL_BUSY" : "HAL_TIMEOUT");
+		HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+	}
+	HAL_Delay(1UL);
 	return Data;
 }
 
@@ -40,13 +48,19 @@ uint8_t MPU6050_ReadOneByte(uint8_t RegAddr)
 // 리턴값 : 센서응답값
 void MPU6050_WriteOneByte(uint8_t RegAddr, uint8_t Data)
 {
-	status = HAL_I2C_Mem_Write(&MPU6050_I2C_PORT,MPU6050_DEVICE_ADDR,RegAddr,I2C_MEMADD_SIZE_8BIT,&Data,1,3000UL);
+	char msg[50];
+	status = HAL_I2C_Mem_Write(&MPU6050_I2C_PORT, MPU6050_DEVICE_ADDR, RegAddr, I2C_MEMADD_SIZE_8BIT, &Data, 1, 5000UL);
 	//	sprintf(msg, "MPU6050_WriteOneByte() : %u\r\n", status);
 	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
 	if (status != HAL_OK)
-		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-//	HAL_Delay(100);
-	HAL_Delay(100);
+	{
+		//		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+		sprintf(msg, "Write status=%s\r\n", (status == HAL_OK) ? "HAL_OK" :
+				(status == HAL_ERROR) ? "HAL_ERROR" :
+						(status == HAL_BUSY) ? "HAL_BUSY" : "HAL_TIMEOUT");
+		HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+	}
+	HAL_Delay(1UL);
 	return;
 }
 
@@ -81,7 +95,7 @@ bool MPU6050_WriteOneBit(uint8_t RegAddr, uint8_t BitNum, uint8_t Data)
 bool MPU6050_ReadBuff(uint8_t RegAddr, uint8_t Num, uint8_t *pBuff)
 {
 	// 메모리 읽기(디바이스 어드레스, 8비트 어드레스 메모리 크기, 버퍼 포인터, 버퍼숫자, 시도횟수)
-	status = HAL_I2C_Mem_Read(&MPU6050_I2C_PORT,MPU6050_DEVICE_ADDR,RegAddr,I2C_MEMADD_SIZE_8BIT,pBuff,Num,3000UL);
+	status = HAL_I2C_Mem_Read(&MPU6050_I2C_PORT, MPU6050_DEVICE_ADDR, RegAddr, I2C_MEMADD_SIZE_8BIT, pBuff, Num, 1000UL);
 	if (status != HAL_OK)
 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 	return status;
@@ -160,23 +174,23 @@ void MPU6050_Init(uint8_t	lpf)
 {
 	// added by gdabba
 	//	MPU6050_WriteOneByte(MPU6050_RA_PWR_MGMT_1, 0x00);
-	//	uint8_t buffer[1] = {0};
-//	char msg[50];
-//	sprintf(msg, "HAL_I2C_IsDeviceReady()=%#x\r\n", HAL_I2C_IsDeviceReady(&hi2c3, MPU6050_DEVICE_ADDR, 10UL, 1000UL));
-//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
+	uint8_t buffer[1] = {0};
+	char msg[50];
+	//	sprintf(msg, "HAL_I2C_IsDeviceReady()=%#x\r\n", HAL_I2C_IsDeviceReady(&hi2c3, MPU6050_DEVICE_ADDR, 10UL, 1000UL));
+	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
 
 	MPU6050_SetDeviceResetEnabled(1);
 	MPU6050_SetSleepEnabled(0);
 
 	// MPU6050 Sample Rate = 1kHz
-	MPU6050_WriteOneByte(MPU6050_RA_SMPLRT_DIV, 7);
+	MPU6050_WriteOneByte(MPU6050_RA_SMPLRT_DIV, 7U);
+	MPU6050_ReadBuff(MPU6050_RA_SMPLRT_DIV, 1, buffer);
+	sprintf(msg, "SMPLRT=%u\r\n", buffer[0]);
+	HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 0xFFFF);
 
-	//	MPU6050_ReadBuff(MPU6050_RA_SMPLRT_DIV, 1, buffer);
-	//	sprintf(msg, "SMPLRT=%u", buffer[0]);
-	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 0xFFFF);
-	//	HAL_Delay(3000);
 
 	//	MPU6050_SetClockSource(MPU6050_CLOCK_PLL_XGYRO);
+	MPU6050_SetClockSource(MPU6050_CLOCK_PLL_YGYRO);
 	MPU6050_SetFullScaleGyroRange(MPU6050_GYRO_FS_250);
 	MPU6050_SetFullScaleAccelRange(MPU6050_ACCEL_FS_2);
 
@@ -189,7 +203,18 @@ void MPU6050_Init(uint8_t	lpf)
 		MPU6050_DLPF_BW_10          0x05
 		MPU6050_DLPF_BW_5           0x06
 	 */
-	//	MPU6050_SetLPF(lpf);
+	MPU6050_ReadBuff(MPU6050_RA_CONFIG, 1, buffer);
+	sprintf(msg, "DLPF=%u\r\n", buffer[0]);
+	HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 0xFFFF);
+
+	MPU6050_SetLPF(lpf);
+	MPU6050_ReadBuff(MPU6050_RA_CONFIG, 1, buffer);
+	sprintf(msg, "DLPF=%u\r\n", buffer[0]);
+	HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 0xFFFF);
+
+	MPU6050_ReadBuff(MPU6050_RA_SMPLRT_DIV, 1, buffer);
+	sprintf(msg, "SMPLRT=%u\r\n", buffer[0]);
+	HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 0xFFFF);
 
 	//	MPU6050_SetI2CMasterModeEnabled(0);
 	//	MPU6050_SetI2CBypassEnabled(1);
@@ -199,7 +224,7 @@ void MPU6050_Init(uint8_t	lpf)
 	//	MPU6050_WriteOneBit(MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_LATCH_INT_EN_BIT, 1);
 	//	MPU6050_WriteOneBit(MPU6050_RA_INT_PIN_CFG, MPU6050_INTCFG_INT_RD_CLEAR_BIT, 1);
 	//	MPU6050_WriteOneBit(MPU6050_RA_INT_ENABLE, MPU6050_INTERRUPT_DATA_RDY_BIT, 1);
-//	HAL_Delay(100);  // 자이로 안정화 대기
+	//	HAL_Delay(100);  // 자이로 안정화 대기
 	HAL_Delay(100);
 }
 

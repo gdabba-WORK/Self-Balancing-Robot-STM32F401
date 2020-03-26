@@ -38,6 +38,12 @@ typedef enum
 	STOP			= 2U
 } Robot_Direction;
 
+typedef enum
+{
+	HALT			= 0U,
+	READY			= 1U,
+	RUN				= 2U
+} Robot_Drive;
 void HAL_Delay(uint32_t Delay);
 
 void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
@@ -70,7 +76,11 @@ void unipolar_parallel_sequence_twoPhase(uint32_t step_delay);
 void unipolar_parallel_sequence_onetwoPhase(uint32_t step_delay);
 void unipolar_parallel_sequence_threePhase(uint32_t step_delay);
 
-void reactToAccel_parallel(int8_t* angle);
-void reactToAngle(int8_t* angle);
+//void reactToAccel_parallel(int8_t* angle);
+float getAlpha(void);
+void reactToAngle(void);
+
+uint32_t getStepDelay(void);
+void reactToAngleGyro(void);
 
 #endif /* STEPPERMOTOR_H_ */
