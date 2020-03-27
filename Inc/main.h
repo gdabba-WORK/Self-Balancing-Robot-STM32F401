@@ -36,10 +36,15 @@ extern "C" {
 #include "stm32f4xx_hal_uart.h"
 #include <stdio.h>
 #include <string.h>
-#include "stepperMotor.h"
-#include "complementary_filter.h"
 #include <stdlib.h>
 #include <math.h>
+#include "stepperMotor.h"
+#include "complementary_filter.h"
+#include "MPU6050.h"
+#include "usart.h"
+#include "i2c.h"
+#include "cmsis_os.h"
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

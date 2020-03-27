@@ -26,10 +26,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */     
-#include "stepperMotor.h"
-#include "MPU6050.h"
-#include "usart.h"
-#include "complementary_filter.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -64,8 +60,7 @@ MPU6050_int32_t diffacc = {0, 0, 0};
 MPU6050_int32_t diffgyro = {0, 0, 0};
 int16_t tmpr;
 uint32_t sync_period = 20UL;
-int8_t angle = 0;
-int8_t _angle = 0;
+
 
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -194,7 +189,7 @@ void StartDefaultTask(void *argument)
 			diffgyro.z = (int32_t)(gyro.z - gyroOffset.z);
 			calcAccelYPR();
 			calcGyroYPR();
-			calcFilteredYPR(&_angle);
+			calcFilteredYPR();
 		}
 		//		count++;
 		//		sprintf(msg, "status=%d\r\n", status);

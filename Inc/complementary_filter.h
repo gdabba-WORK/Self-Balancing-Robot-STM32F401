@@ -15,7 +15,7 @@ typedef struct {
 	float y;
 	float z;
 } MPU6050_float_t;
-#endif /* INC_COMPLEMENTARY_FILTER_H_ */
+
 
 void initDT(void);
 
@@ -25,4 +25,8 @@ void calcAccelYPR(void);
 
 void calcGyroYPR(void);
 
-void calcFilteredYPR(int8_t*);
+void calcFilteredYPR();
+
+#endif /* INC_COMPLEMENTARY_FILTER_H_ */
+
+

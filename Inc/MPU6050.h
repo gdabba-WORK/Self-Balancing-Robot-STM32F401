@@ -25,9 +25,7 @@
 #define __MPU6050_H
 
 #include "main.h"
-#include "i2c.h"
-#include "cmsis_os.h"
-#include "usart.h"
+
 
 extern I2C_HandleTypeDef hi2c3;
 

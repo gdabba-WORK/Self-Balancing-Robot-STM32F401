@@ -12,8 +12,6 @@
 #endif
 
 #include "main.h"
-#include "MPU6050.h"
-#include "usart.h"
 
 typedef enum
 {
@@ -81,6 +79,7 @@ float getAlpha(void);
 void reactToAngle(void);
 
 uint32_t getStepDelay(void);
+void adjustVelocityLimit(void);
 void reactToAngleGyro(void);
 
 #endif /* STEPPERMOTOR_H_ */
