@@ -703,7 +703,7 @@ uint32_t getStepDelay(void)
 {
 	uint32_t new_delay;
 
-	//	alpha_latter = alpha_former * coefficient;
+	alpha_latter = alpha_former * coefficient;
 
 	if (drive_flag == HALT)
 	{
@@ -785,8 +785,8 @@ void reactToAngleGyro(void)
 	{
 		if (print_flag)
 		{
-//			sprintf(msg, "step_delay_total=%10.6f\r\n", (float)step_delay_total/1000000.0F);
-//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			//			sprintf(msg, "step_delay_total=%10.6f\r\n", (float)step_delay_total/1000000.0F);
+			//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			sprintf(msg, "step_total=%10ld\r\n", step_total);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 		}
@@ -803,11 +803,11 @@ void reactToAngleGyro(void)
 		else if (direction_flag == BACKWARD)
 			step--;
 		unipolar_parallel_sequence_onetwoPhase(step_delay);
-//		if (print_flag)
-//		{
-//			sprintf(msg, "%-10s\tf=%7.3f\ta=%7.3f\tg=%7.3f\ts=%7.3f\tstep_delay=%ld\r\n",
-//					(direction_flag == FORWARD) ? "FORWARD" : "BACKWARD", filtered_angle.x, accel_angle.x, gyro_angle.x, cos_val, step_delay);
-//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-//		}
+		//		if (print_flag)
+		//		{
+		//			sprintf(msg, "%-10s\tf=%7.3f\ta=%7.3f\tg=%7.3f\ts=%7.3f\tstep_delay=%ld\r\n",
+		//					(direction_flag == FORWARD) ? "FORWARD" : "BACKWARD", filtered_angle.x, accel_angle.x, gyro_angle.x, cos_val, step_delay);
+		//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+		//		}
 	}
 }
