@@ -25,31 +25,39 @@ uint32_t step_delay_static = 1000UL;
 uint32_t step_delay_dynamic = 5UL;
 //uint32_t step_delay = 2020UL;
 
-uint32_t step_delay_vertical = 7000UL;
+uint32_t step_delay_vertical = 6000UL;
 uint32_t step_delay_horizontal = 3000UL;
-uint32_t step_delay_low = 10000UL;
-uint32_t step_delay_high = 10000UL;
+uint32_t step_delay_low = 6000UL;
+uint32_t step_delay_high = 6000UL;
 
-uint32_t step_delay = 0UL;
+uint32_t step_delay = 6000UL;
 uint32_t prev_step_delay = 0UL;
 uint32_t step_delay_total = 0UL;
 
 float alpha_former = 0.30F;
 float alpha_latter = 0.03F;
-float beta = 	0.45F;
+float beta = 	0.50F;
 float coefficient = 0.10F;
 
 float cos_val = 0.0F;
 
-Robot_Direction direction_flag = STOP;
-Robot_Direction prev_direction_flag = STOP;
+Robot_Direction direction_flag = FRONT;
+Robot_Direction prev_direction_flag = FRONT;
 float prev_gyro_angle = 0.0F;
 
 Motor_Mode mode_flag = ONETWO_PHASE;
 Motor_State state_flag = BOTH_MOTOR;
+Motor_Rotation rotation_flag = FORWARD;
 
 Robot_Drive drive_flag = HALT;
 Robot_Drive prev_drive_flag = HALT;
+
+
+float VELOCITY_CONSTANT = 0.0F;
+//const float ACCELERATION_OF_GRAVITY = 9.80665F;
+const float ACCELERATION_OF_GRAVITY = 11.0F;
+const float STEP_RADIAN = 0.02F;
+const float WHEEL_RADIUS = 0.035F;
 
 void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
 		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_)
@@ -698,7 +706,7 @@ void reactToAngle(void)
 		}
 	}
 }
-
+/*
 uint32_t getStepDelay(void)
 {
 	uint32_t new_delay;
@@ -730,24 +738,10 @@ uint32_t getStepDelay(void)
 
 	return new_delay;
 }
-
-void adjustVelocityLimit(void)
-{
-	uint32_t step_delay_incline;
-
-	if (prev_angle != angle)
-	{
-		cos_val = cos(filtered_angle.x / RADIANS_TO_DEGREES);
-		step_delay_incline = (uint32_t)((float)step_delay_vertical * cos_val * beta);
-
-		if (step_delay_incline < step_delay_horizontal)
-			step_delay_low = step_delay_horizontal;
-		else
-			step_delay_low = step_delay_incline;
-	}
-}
+ */
 
 
+/*
 void reactToAngleGyro(void)
 {
 	char msg[150];
@@ -774,6 +768,7 @@ void reactToAngleGyro(void)
 		step_delay_total = 0UL;
 		step_total = 0UL;
 		step_delay_total = step_delay_total + step_delay;
+		step_total = step_total + 1UL;
 	}
 
 	if ((prev_drive_flag != HALT) && (drive_flag != HALT))
@@ -801,6 +796,138 @@ void reactToAngleGyro(void)
 		if (direction_flag == FORWARD)
 			step++;
 		else if (direction_flag == BACKWARD)
+			step--;
+		unipolar_parallel_sequence_onetwoPhase(step_delay);
+		//		if (print_flag)
+		//		{
+		//			sprintf(msg, "%-10s\tf=%7.3f\ta=%7.3f\tg=%7.3f\ts=%7.3f\tstep_delay=%ld\r\n",
+		//					(direction_flag == FORWARD) ? "FORWARD" : "BACKWARD", filtered_angle.x, accel_angle.x, gyro_angle.x, cos_val, step_delay);
+		//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+		//		}
+	}
+}
+ */
+uint32_t getStepDelay(void)
+{
+	uint32_t new_delay;
+
+	if (drive_flag == HALT)
+	{
+		new_delay = step_delay_high;
+		VELOCITY_CONSTANT = 0.0F;
+	}
+	else if (drive_flag == ACCEL)
+	{
+		if (VELOCITY_CONSTANT == 0.0F)
+		{
+			new_delay = step_delay_high;
+			VELOCITY_CONSTANT = ((STEP_RADIAN * WHEEL_RADIUS) / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+		}
+		else
+		{
+			new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * cos(filtered_angle.x  / RADIANS_TO_DEGREES)) + VELOCITY_CONSTANT) * 1000000.0F;
+			VELOCITY_CONSTANT = ((STEP_RADIAN * WHEEL_RADIUS) / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+		}
+	}
+	else if (drive_flag == DECEL)
+	{
+		new_delay = ((STEP_RADIAN * WHEEL_RADIUS) / (-(((float)step_delay / 1000000.0F) * ACCELERATION_OF_GRAVITY * sin(fabs(filtered_angle.x))) + ((STEP_RADIAN * WHEEL_RADIUS) / ((float)step_delay / 1000000.0F)))) * 1000000.0F;
+	}
+
+	if (new_delay < step_delay_low)
+		return step_delay_low;
+	else if (new_delay > step_delay_high)
+		return step_delay_high;
+
+	return new_delay;
+}
+
+void adjustVelocityLimit(void)
+{
+	uint32_t step_delay_incline;
+
+	if (prev_angle != angle)
+	{
+		cos_val = cos(filtered_angle.x / RADIANS_TO_DEGREES);
+		step_delay_incline = (uint32_t)((float)step_delay_vertical * cos_val * beta);
+
+		if (step_delay_incline < step_delay_horizontal)
+			step_delay_low = step_delay_horizontal;
+		else
+			step_delay_low = step_delay_incline;
+	}
+}
+
+void reactToAngleGyro(void)
+{
+	char msg[150];
+
+	if (filtered_angle.x >= 0.0F)
+		direction_flag = FRONT;
+	else
+		direction_flag = REAR;
+
+	if (((filtered_angle.x) >= -(boundary_inner)) && ((filtered_angle.x) <= (boundary_inner)))
+	{
+		if (step_delay == step_delay_high)
+		{
+			prev_drive_flag = drive_flag;
+			drive_flag = HALT;
+		}
+		else if (prev_direction_flag != direction_flag)
+		{
+			prev_drive_flag = drive_flag;
+			drive_flag = DECEL;
+			prev_direction_flag = direction_flag;
+		}
+	}
+	else if ((drive_flag != ACCEL) || (prev_direction_flag != direction_flag))
+	{
+		prev_drive_flag = drive_flag;
+		drive_flag = ACCEL;
+		if (direction_flag == FRONT)
+			rotation_flag = FORWARD;
+		else if (direction_flag == REAR)
+			rotation_flag = BACKWARD;
+		prev_direction_flag = direction_flag;
+	}
+
+	adjustVelocityLimit();
+	step_delay = getStepDelay();
+
+//	if ((prev_drive_flag == HALT) && (drive_flag != HALT))
+//	{
+//		step_delay_total = 0UL;
+//		step_total = 0UL;
+//		step_delay_total = step_delay_total + step_delay;
+//		step_total = step_total + 1UL;
+//	}
+//
+//	if ((prev_drive_flag != HALT) && (drive_flag != HALT))
+//	{
+//		step_delay_total = step_delay_total + step_delay;
+//		step_total = step_total + 1UL;
+//	}
+//	if (prev_drive_flag != HALT && drive_flag == HALT)
+//	{
+//		if (print_flag)
+//		{
+//			//			sprintf(msg, "step_delay_total=%10.6f\r\n", (float)step_delay_total/1000000.0F);
+//			//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+//			sprintf(msg, "step_total=%10ld\r\n", step_total);
+//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+//		}
+//	}
+
+	if (drive_flag == HALT)
+	{
+		unipolar_parallel_sequence_onetwoPhase(0UL);
+	}
+	else
+	{
+		if (rotation_flag == FORWARD)
+			step++;
+		else if (rotation_flag == BACKWARD)
 			step--;
 		unipolar_parallel_sequence_onetwoPhase(step_delay);
 		//		if (print_flag)

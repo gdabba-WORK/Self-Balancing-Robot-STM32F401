@@ -161,6 +161,13 @@ void StartDefaultTask(void *argument)
 
 	MPU6050_Init(MPU6050_DLPF_BW_42);
 	MPU6050_InitOffset(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
+//	accOffset.x = 1925;
+//	accOffset.y = 1076;
+//	accOffset.z = -14651;
+//	gyroOffset.x = 45;
+//	gyroOffset.x = 34;
+//	gyroOffset.x = -2;
+
 
 	//	sprintf(msg, "%d,%d,%d,%d,%d,%d\r\n", accOffset.x, accOffset.y, accOffset.z, gyroOffset.x, gyroOffset.y, gyroOffset.z);
 	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);

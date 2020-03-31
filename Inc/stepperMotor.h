@@ -31,16 +31,24 @@ typedef enum
 
 typedef enum
 {
-	FORWARD		= 0U,
-	BACKWARD		= 1U,
-	STOP			= 2U
+	FORWARD	= 0U,
+	BACKWARD	= 1U
+} Motor_Rotation;
+
+typedef enum
+{
+	FRONT		= 0U,
+	REAR		= 1U,
+	STOP		= 2U
 } Robot_Direction;
 
 typedef enum
 {
 	HALT			= 0U,
 	READY			= 1U,
-	RUN				= 2U
+	RUN				= 2U,
+	ACCEL			= 3U,
+	DECEL			= 4U
 } Robot_Drive;
 void HAL_Delay(uint32_t Delay);
 

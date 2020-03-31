@@ -52,7 +52,7 @@ uint8_t rx_data = 0;
 extern uint32_t step_delay_static, step_delay_dynamic;
 extern uint32_t step_delay_low, step_delay_high, step_delay_vertical, step_delay_horizontal;
 extern int16_t step_max;
-extern Robot_Direction direction_flag;
+extern Robot_Direction lean_direction_flag;
 extern Motor_Mode mode_flag;
 extern Motor_State state_flag;
 extern uint32_t sync_period;
@@ -71,6 +71,7 @@ int8_t print_flag = 0;
 extern float ALPHA;
 extern MPU6050_float_t filtered_angle;
 extern float cos_val;
+extern MPU6050_int16_t accOffset, gyroOffset;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -334,7 +335,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			break;
 		case '[' :
 			if ((beta - 0.01F) > 0.0F)
-				beta = beta - 0.1F;
+				beta = beta - 0.01F;
 			break;
 		case ']' :
 			if ((beta + 0.01F) <= 1.0F)
@@ -383,6 +384,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			sprintf(msg, "dt=%.6f\r\n", dt);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			sprintf(msg, "ALPHA=%.2f\r\n", ALPHA);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "gyroOffset=%10d\t%10d\t%10d\t\r\n", gyroOffset.x, gyroOffset.y, gyroOffset.z);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "accOffset=%10d\t%10d\t%10d\t\r\n", accOffset.x, accOffset.y, accOffset.z);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			sprintf(msg, "status=%s\r\n", (status == HAL_OK) ? "HAL_OK" :
 					(status == HAL_ERROR) ? "HAL_ERROR" :
