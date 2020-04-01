@@ -51,6 +51,7 @@
 uint8_t rx_data = 0;
 extern uint32_t step_delay_static, step_delay_dynamic;
 extern uint32_t step_delay_low, step_delay_high, step_delay_vertical, step_delay_horizontal;
+extern uint32_t step_delay;
 extern int16_t step_max;
 extern Robot_Direction lean_direction_flag;
 extern Motor_Mode mode_flag;
@@ -72,6 +73,7 @@ extern float ALPHA;
 extern MPU6050_float_t filtered_angle;
 extern float cos_val;
 extern MPU6050_int16_t accOffset, gyroOffset;
+extern float ACCELERATION_OF_ROBOT;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -295,15 +297,19 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '/' :
-			if ((boundary_outer - 0.1F) > boundary_inner)
-				boundary_outer = boundary_outer - 0.1F;
+			ACCELERATION_OF_ROBOT = ACCELERATION_OF_ROBOT - 0.10000F;
+			//			if ((boundary_outer - 0.1F) > boundary_inner)
+			//				boundary_outer = boundary_outer - 0.1F;
 			break;
 		case '*' :
-			sprintf(msg, "boundary_outer=%10.2f\r\n", boundary_outer);
+			sprintf(msg, "ACCELERATION_OF_ROBOT=%10.5f\r\n", ACCELERATION_OF_ROBOT);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			//			sprintf(msg, "boundary_outer=%10.2f\r\n", boundary_outer);
+			//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '-' :
-			boundary_outer = boundary_outer + 0.1F;
+			ACCELERATION_OF_ROBOT = ACCELERATION_OF_ROBOT + 0.10000F;
+			//			boundary_outer = boundary_outer + 0.1F;
 			break;
 		case 'j' :
 			sprintf(msg, "coefficient=%.2f\r\n", coefficient);
@@ -385,9 +391,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			sprintf(msg, "ALPHA=%.2f\r\n", ALPHA);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-			sprintf(msg, "gyroOffset=%10d\t%10d\t%10d\t\r\n", gyroOffset.x, gyroOffset.y, gyroOffset.z);
+			sprintf(msg, "gyroOffset=%10d\t%10d\t%10d\r\n", gyroOffset.x, gyroOffset.y, gyroOffset.z);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-			sprintf(msg, "accOffset=%10d\t%10d\t%10d\t\r\n", accOffset.x, accOffset.y, accOffset.z);
+			sprintf(msg, "accOffset=%10d\t%10d\t%10d\r\n", accOffset.x, accOffset.y, accOffset.z);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "ACCELERATION_OF_ROBOT=%10.5f\r\n", ACCELERATION_OF_ROBOT);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			sprintf(msg, "status=%s\r\n", (status == HAL_OK) ? "HAL_OK" :
 					(status == HAL_ERROR) ? "HAL_ERROR" :
@@ -407,13 +415,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 				ALPHA = ALPHA + 0.01F;
 			break;
 		case 'a' :
-			if ((boundary_inner - 0.1F) > 0.0F)
-				boundary_inner = boundary_inner - 0.1F;
+			//			if ((boundary_inner - 0.1F) > 0.0F)
+			boundary_inner = boundary_inner - 0.1F;
 			//			state_flag = RIGHT_MOTOR;
 			break;
 		case 'd' :
-			if ((boundary_inner + 0.1F) < boundary_outer)
-				boundary_inner = boundary_inner + 0.1F;
+			//			if ((boundary_inner + 0.1F) < boundary_outer)
+			boundary_inner = boundary_inner + 0.1F;
 			//			state_flag = LEFT_MOTOR;
 			break;
 			//		case 'w' :
@@ -438,6 +446,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			sprintf(msg, "cos_val=%7.3f\r\n", cos_val);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
+		case 'h' :
+			sprintf(msg, "step_delay=%10ld\r\n", step_delay);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 		}
 		//		HAL_UART_Transmit(&huart2, &rx_data, 1, 10);
 		HAL_UART_Receive_IT(&huart1, &rx_data, 1);

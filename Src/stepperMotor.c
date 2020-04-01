@@ -12,6 +12,7 @@ extern uint32_t microTick2;
 extern MPU6050_float_t accel_angle;
 extern MPU6050_float_t gyro_angle;
 extern MPU6050_float_t filtered_angle;
+extern float prev_filtered_angle_x;
 extern int8_t print_flag;
 extern int8_t angle, prev_angle;
 extern const float RADIANS_TO_DEGREES;
@@ -25,10 +26,10 @@ uint32_t step_delay_static = 1000UL;
 uint32_t step_delay_dynamic = 5UL;
 //uint32_t step_delay = 2020UL;
 
-uint32_t step_delay_vertical = 6000UL;
-uint32_t step_delay_horizontal = 3000UL;
+uint32_t step_delay_vertical = 20000UL;
+uint32_t step_delay_horizontal = 2000UL;
 uint32_t step_delay_low = 6000UL;
-uint32_t step_delay_high = 6000UL;
+uint32_t step_delay_high = 20000UL;
 
 uint32_t step_delay = 6000UL;
 uint32_t prev_step_delay = 0UL;
@@ -36,7 +37,7 @@ uint32_t step_delay_total = 0UL;
 
 float alpha_former = 0.30F;
 float alpha_latter = 0.03F;
-float beta = 	0.50F;
+float beta = 	0.85F;
 float coefficient = 0.10F;
 
 float cos_val = 0.0F;
@@ -54,8 +55,8 @@ Robot_Drive prev_drive_flag = HALT;
 
 
 float VELOCITY_CONSTANT = 0.0F;
-//const float ACCELERATION_OF_GRAVITY = 9.80665F;
-const float ACCELERATION_OF_GRAVITY = 11.0F;
+const float ACCELERATION_OF_GRAVITY = 9.80665F;
+float ACCELERATION_OF_ROBOT = 10.00000F;
 const float STEP_RADIAN = 0.02F;
 const float WHEEL_RADIUS = 0.035F;
 
@@ -813,21 +814,30 @@ uint32_t getStepDelay(void)
 
 	if (drive_flag == HALT)
 	{
-		new_delay = step_delay_high;
+		new_delay = step_delay_vertical;
 		VELOCITY_CONSTANT = 0.0F;
 	}
 	else if (drive_flag == ACCEL)
 	{
 		if (VELOCITY_CONSTANT == 0.0F)
 		{
-			new_delay = step_delay_high;
-			VELOCITY_CONSTANT = ((STEP_RADIAN * WHEEL_RADIUS) / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+			new_delay = step_delay_vertical;
+			VELOCITY_CONSTANT = ((STEP_RADIAN * WHEEL_RADIUS) / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_ROBOT * cos(filtered_angle.x / RADIANS_TO_DEGREES));
 		}
 		else
 		{
-			new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * cos(filtered_angle.x  / RADIANS_TO_DEGREES)) + VELOCITY_CONSTANT) * 1000000.0F;
-			VELOCITY_CONSTANT = ((STEP_RADIAN * WHEEL_RADIUS) / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+			if (fabs(prev_filtered_angle_x) >= fabs(filtered_angle.x))
+			{
+				new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_ROBOT * cos(filtered_angle.x  / RADIANS_TO_DEGREES)) + VELOCITY_CONSTANT) * 1000000.0F;
+				VELOCITY_CONSTANT = ((STEP_RADIAN * WHEEL_RADIUS) / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_ROBOT * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+			}
+			else
+			{
+				VELOCITY_CONSTANT = ((STEP_RADIAN * WHEEL_RADIUS) / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_ROBOT * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+				new_delay = step_delay_low;
+			}
 		}
+		//		new_delay = ((STEP_RADIAN * WHEEL_RADIUS) / ((((float)step_delay / 1000000.0F) * ACCELERATION_OF_ROBOT * sin(fabs(filtered_angle.x))) + ((STEP_RADIAN * WHEEL_RADIUS) / ((float)step_delay / 1000000.0F)))) * 1000000.0F;
 	}
 	else if (drive_flag == DECEL)
 	{
@@ -836,8 +846,8 @@ uint32_t getStepDelay(void)
 
 	if (new_delay < step_delay_low)
 		return step_delay_low;
-	else if (new_delay > step_delay_high)
-		return step_delay_high;
+	else if (new_delay > step_delay_vertical)
+		return step_delay_vertical;
 
 	return new_delay;
 }
@@ -869,7 +879,7 @@ void reactToAngleGyro(void)
 
 	if (((filtered_angle.x) >= -(boundary_inner)) && ((filtered_angle.x) <= (boundary_inner)))
 	{
-		if (step_delay == step_delay_high)
+		if (step_delay == step_delay_vertical)
 		{
 			prev_drive_flag = drive_flag;
 			drive_flag = HALT;
@@ -895,29 +905,29 @@ void reactToAngleGyro(void)
 	adjustVelocityLimit();
 	step_delay = getStepDelay();
 
-//	if ((prev_drive_flag == HALT) && (drive_flag != HALT))
-//	{
-//		step_delay_total = 0UL;
-//		step_total = 0UL;
-//		step_delay_total = step_delay_total + step_delay;
-//		step_total = step_total + 1UL;
-//	}
-//
-//	if ((prev_drive_flag != HALT) && (drive_flag != HALT))
-//	{
-//		step_delay_total = step_delay_total + step_delay;
-//		step_total = step_total + 1UL;
-//	}
-//	if (prev_drive_flag != HALT && drive_flag == HALT)
-//	{
-//		if (print_flag)
-//		{
-//			//			sprintf(msg, "step_delay_total=%10.6f\r\n", (float)step_delay_total/1000000.0F);
-//			//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-//			sprintf(msg, "step_total=%10ld\r\n", step_total);
-//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-//		}
-//	}
+	//	if ((prev_drive_flag == HALT) && (drive_flag != HALT))
+	//	{
+	//		step_delay_total = 0UL;
+	//		step_total = 0UL;
+	//		step_delay_total = step_delay_total + step_delay;
+	//		step_total = step_total + 1UL;
+	//	}
+	//
+	//	if ((prev_drive_flag != HALT) && (drive_flag != HALT))
+	//	{
+	//		step_delay_total = step_delay_total + step_delay;
+	//		step_total = step_total + 1UL;
+	//	}
+	//	if (prev_drive_flag != HALT && drive_flag == HALT)
+	//	{
+	//		if (print_flag)
+	//		{
+	//			//			sprintf(msg, "step_delay_total=%10.6f\r\n", (float)step_delay_total/1000000.0F);
+	//			//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+	//			sprintf(msg, "step_total=%10ld\r\n", step_total);
+	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+	//		}
+	//	}
 
 	if (drive_flag == HALT)
 	{
