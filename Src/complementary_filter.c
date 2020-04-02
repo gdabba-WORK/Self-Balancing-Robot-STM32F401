@@ -64,7 +64,7 @@ void calcAccelYPR(void)
 
 	// 센서가 뒤집어져서 accelerometer Z축이 음수의 값을 가짐
 	//	accel.z = (float_t)(diffacc.z - 16384L) / 16384.0F;
-	accel.z = (float)(diffacc.z + 16384L) / 16384.0F;
+	accel.z = (float)fabs((diffacc.z - 16384L)) / 16384.0F;
 
 //	accel_yz = (float)sqrt(pow(accel.y, 2) + pow(accel.z, 2));
 //	accel_angle.y = (float)atan(-accel.x / accel_yz) * RADIANS_TO_DEGREES;

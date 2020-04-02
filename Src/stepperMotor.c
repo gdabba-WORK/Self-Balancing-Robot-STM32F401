@@ -26,18 +26,18 @@ uint32_t step_delay_static = 1000UL;
 uint32_t step_delay_dynamic = 5UL;
 //uint32_t step_delay = 2020UL;
 
-uint32_t step_delay_vertical = 20000UL;
+uint32_t step_delay_vertical = 40000UL;
 uint32_t step_delay_horizontal = 2000UL;
 uint32_t step_delay_low = 6000UL;
-uint32_t step_delay_high = 20000UL;
+uint32_t step_delay_high = 40000UL;
 
-uint32_t step_delay = 6000UL;
+uint32_t step_delay = 20000UL;
 uint32_t prev_step_delay = 0UL;
 uint32_t step_delay_total = 0UL;
 
 float alpha_former = 0.30F;
 float alpha_latter = 0.03F;
-float beta = 	0.85F;
+float beta = 	0.1250F;
 float coefficient = 0.10F;
 
 float cos_val = 0.0F;
@@ -55,10 +55,11 @@ Robot_Drive prev_drive_flag = HALT;
 
 
 float VELOCITY_CONSTANT = 0.0F;
-const float ACCELERATION_OF_GRAVITY = 9.80665F;
-float ACCELERATION_OF_ROBOT = 10.00000F;
+const double ACCELERATION_OF_GRAVITY = 9.80665;
+double ACCELERATION_OF_RISING = 0.2;
 const float STEP_RADIAN = 0.02F;
 const float WHEEL_RADIUS = 0.035F;
+const double WHEEL_CONSTANT = 0.0007;
 
 void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
 		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_)
@@ -810,8 +811,9 @@ void reactToAngleGyro(void)
  */
 uint32_t getStepDelay(void)
 {
-	uint32_t new_delay;
-
+	uint32_t new_delay = 0UL;
+	double step_delay_of_double = (double)step_delay / 1000000.0;
+	char msg[50];
 	if (drive_flag == HALT)
 	{
 		new_delay = step_delay_vertical;
@@ -822,33 +824,57 @@ uint32_t getStepDelay(void)
 		if (VELOCITY_CONSTANT == 0.0F)
 		{
 			new_delay = step_delay_vertical;
-			VELOCITY_CONSTANT = ((STEP_RADIAN * WHEEL_RADIUS) / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_ROBOT * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+			//			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x / RADIANS_TO_DEGREES)));
 		}
 		else
 		{
 			if (fabs(prev_filtered_angle_x) >= fabs(filtered_angle.x))
 			{
-				new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_ROBOT * cos(filtered_angle.x  / RADIANS_TO_DEGREES)) + VELOCITY_CONSTANT) * 1000000.0F;
-				VELOCITY_CONSTANT = ((STEP_RADIAN * WHEEL_RADIUS) / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_ROBOT * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+				//				new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * cos(filtered_angle.x  / RADIANS_TO_DEGREES)) + VELOCITY_CONSTANT) * 1000000.0F;
+				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+				new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x  / RADIANS_TO_DEGREES))) + VELOCITY_CONSTANT) * 1000000.0F;
+				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x / RADIANS_TO_DEGREES)));
 			}
 			else
 			{
-				VELOCITY_CONSTANT = ((STEP_RADIAN * WHEEL_RADIUS) / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_ROBOT * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+				//				new_delay = step_delay_low;
+				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x / RADIANS_TO_DEGREES)));
 				new_delay = step_delay_low;
 			}
 		}
-		//		new_delay = ((STEP_RADIAN * WHEEL_RADIUS) / ((((float)step_delay / 1000000.0F) * ACCELERATION_OF_ROBOT * sin(fabs(filtered_angle.x))) + ((STEP_RADIAN * WHEEL_RADIUS) / ((float)step_delay / 1000000.0F)))) * 1000000.0F;
+		new_delay = (uint32_t)(WHEEL_CONSTANT / (step_delay_of_double * (ACCELERATION_OF_GRAVITY * step_delay_of_double * sin(fabs(filtered_angle.x / RADIANS_TO_DEGREES)) / cos(filtered_angle.x / RADIANS_TO_DEGREES) + ACCELERATION_OF_RISING) + (WHEEL_CONSTANT / step_delay_of_double)) * 1000000.0);
+		//		if (print_flag)
+		//		{
+		//			sprintf(msg, "new_delay=%10lu\r\n", new_delay);
+		//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+		//		}
+		if (new_delay < step_delay_low)
+			return step_delay_low;
 	}
 	else if (drive_flag == DECEL)
 	{
-		new_delay = ((STEP_RADIAN * WHEEL_RADIUS) / (-(((float)step_delay / 1000000.0F) * ACCELERATION_OF_GRAVITY * sin(fabs(filtered_angle.x))) + ((STEP_RADIAN * WHEEL_RADIUS) / ((float)step_delay / 1000000.0F)))) * 1000000.0F;
+		//		new_delay = (uint32_t)(WHEEL_CONSTANT / (-(step_delay_of_double * ACCELERATION_OF_GRAVITY * sin(fabs(filtered_angle.x / RADIANS_TO_DEGREES)) / cos(filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay_of_double)) * 1000000.0);
+		//		VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x / RADIANS_TO_DEGREES)));
+		//		new_delay = step_delay_low;
+		if (fabs(prev_filtered_angle_x) >= fabs(filtered_angle.x))
+		{
+			//				new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * cos(filtered_angle.x  / RADIANS_TO_DEGREES)) + VELOCITY_CONSTANT) * 1000000.0F;
+			//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+			new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x  / RADIANS_TO_DEGREES))) + VELOCITY_CONSTANT) * 1000000.0F;
+			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x / RADIANS_TO_DEGREES)));
+		}
+		else
+		{
+			//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+			//				new_delay = step_delay_low;
+			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x / RADIANS_TO_DEGREES)));
+			new_delay = step_delay_low;
+		}
+		if (new_delay > step_delay_vertical)
+			return step_delay_vertical;
 	}
-
-	if (new_delay < step_delay_low)
-		return step_delay_low;
-	else if (new_delay > step_delay_vertical)
-		return step_delay_vertical;
-
 	return new_delay;
 }
 

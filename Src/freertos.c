@@ -160,13 +160,13 @@ void StartDefaultTask(void *argument)
 	//	uint32_t count = 0;
 
 	MPU6050_Init(MPU6050_DLPF_BW_42);
-//	MPU6050_InitOffset(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
-	accOffset.x = 2000;
-	accOffset.y = 1725;
-	accOffset.z = -14617;
-	gyroOffset.x = 43;
-	gyroOffset.x = 33;
-	gyroOffset.x = -5;
+	MPU6050_InitOffset(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
+//	accOffset.x = 2000;
+//	accOffset.y = 1725;
+//	accOffset.z = -14617;
+//	gyroOffset.x = 43;
+//	gyroOffset.x = 33;
+//	gyroOffset.x = -5;
 
 
 	//	sprintf(msg, "%d,%d,%d,%d,%d,%d\r\n", accOffset.x, accOffset.y, accOffset.z, gyroOffset.x, gyroOffset.y, gyroOffset.z);
