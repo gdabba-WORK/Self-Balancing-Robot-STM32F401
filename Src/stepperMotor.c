@@ -16,28 +16,29 @@ extern float prev_filtered_angle_x;
 extern int8_t print_flag;
 extern int8_t angle, prev_angle;
 extern const float RADIANS_TO_DEGREES;
+extern float REAL_DEGREE_COEFFICIENT;
 
-float boundary_inner = 1.00F;
-float boundary_outer = 1.10F;
+float boundary_inner = 0.30F;
+float boundary_outer = 1.00F;
 uint8_t step = 0U;
 int16_t step_max = 24;
 uint32_t step_total = 0UL;
 uint32_t step_delay_static = 1000UL;
 uint32_t step_delay_dynamic = 5UL;
-//uint32_t step_delay = 2020UL;
 
-uint32_t step_delay_vertical = 40000UL;
+uint32_t step_delay_vertical = 10000UL;
 uint32_t step_delay_horizontal = 2000UL;
-uint32_t step_delay_low = 6000UL;
-uint32_t step_delay_high = 40000UL;
-
-uint32_t step_delay = 20000UL;
-uint32_t prev_step_delay = 0UL;
+uint32_t step_delay_low = 10000UL;
+uint32_t step_delay_high = 10000UL;
+uint32_t step_delay = 10000UL;
+uint32_t step_delay_temp = 0UL;
 uint32_t step_delay_total = 0UL;
 
+uint32_t prev_step_delay = 0UL;
+
 float alpha_former = 0.30F;
-float alpha_latter = 0.03F;
-float beta = 	0.1250F;
+float alpha_latter = 0.030F;
+float LIMIT_BETA = 	0.50F;
 float coefficient = 0.10F;
 
 float cos_val = 0.0F;
@@ -55,11 +56,12 @@ Robot_Drive prev_drive_flag = HALT;
 
 
 float VELOCITY_CONSTANT = 0.0F;
-const double ACCELERATION_OF_GRAVITY = 9.80665;
-double ACCELERATION_OF_RISING = 0.2;
-const float STEP_RADIAN = 0.02F;
-const float WHEEL_RADIUS = 0.035F;
-const double WHEEL_CONSTANT = 0.0007;
+const float ACCELERATION_OF_GRAVITY = 9.806650F;
+float ACCELERATION_OF_RISING = 0.20F;
+const float STEP_RADIAN = 0.020F;
+const float WHEEL_RADIUS = 0.0350F;
+const float WHEEL_CONSTANT = 0.00070F;
+float DEGREE_COEFFICIENT = 3.140F;
 
 void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
 		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_)
@@ -812,20 +814,34 @@ void reactToAngleGyro(void)
 uint32_t getStepDelay(void)
 {
 	uint32_t new_delay = 0UL;
-	double step_delay_of_double = (double)step_delay / 1000000.0;
+	float step_delay_of_float = (float)step_delay / 1000000.0F;
 	char msg[50];
+
 	if (drive_flag == HALT)
 	{
-		new_delay = step_delay_vertical;
+		VELOCITY_CONSTANT = 0.0F;
+	}
+
+	else if (drive_flag == RUN)
+	{
+		VELOCITY_CONSTANT = 0.0F;
+		new_delay = step_delay;
+	}
+	else if (drive_flag == READY)
+	{
 		VELOCITY_CONSTANT = 0.0F;
 	}
 	else if (drive_flag == ACCEL)
 	{
 		if (VELOCITY_CONSTANT == 0.0F)
 		{
-			new_delay = step_delay_vertical;
 			//			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
-			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x / RADIANS_TO_DEGREES)));
+			new_delay = step_delay_low;
+			if (step_delay_temp != 0UL)
+				step_delay_temp = 0UL;
+			//			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT));
+			//			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT));
+			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
 		}
 		else
 		{
@@ -833,18 +849,28 @@ uint32_t getStepDelay(void)
 			{
 				//				new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * cos(filtered_angle.x  / RADIANS_TO_DEGREES)) + VELOCITY_CONSTANT) * 1000000.0F;
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
-				new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x  / RADIANS_TO_DEGREES))) + VELOCITY_CONSTANT) * 1000000.0F;
-				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x / RADIANS_TO_DEGREES)));
+				//				new_delay = (WHEEL_CONSTANT / ((ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT)) + VELOCITY_CONSTANT)) * 1000000.0F;
+				//				new_delay = (WHEEL_CONSTANT / ((ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT)) + VELOCITY_CONSTANT)) * 1000000.0F;
+				new_delay = (WHEEL_CONSTANT / ((ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT)) + VELOCITY_CONSTANT)) * 1000000.0F;
+				if (step_delay_temp != 0UL)
+					step_delay_temp = 0UL;
+				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT));
+				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT));
+				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
 			}
 			else
 			{
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
 				//				new_delay = step_delay_low;
-				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x / RADIANS_TO_DEGREES)));
 				new_delay = step_delay_low;
+				if (step_delay_temp == 0UL)
+					step_delay_temp = step_delay;
+				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT));
+				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT));
+				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
 			}
 		}
-		new_delay = (uint32_t)(WHEEL_CONSTANT / (step_delay_of_double * (ACCELERATION_OF_GRAVITY * step_delay_of_double * sin(fabs(filtered_angle.x / RADIANS_TO_DEGREES)) / cos(filtered_angle.x / RADIANS_TO_DEGREES) + ACCELERATION_OF_RISING) + (WHEEL_CONSTANT / step_delay_of_double)) * 1000000.0);
+		//		new_delay = (uint32_t)(WHEEL_CONSTANT / (step_delay_of_double * (ACCELERATION_OF_GRAVITY * step_delay_of_double * sin(fabs(filtered_angle.x / RADIANS_TO_DEGREES)) / cos(filtered_angle.x / RADIANS_TO_DEGREES) + ACCELERATION_OF_RISING) + (WHEEL_CONSTANT / step_delay_of_double)) * 1000000.0);
 		//		if (print_flag)
 		//		{
 		//			sprintf(msg, "new_delay=%10lu\r\n", new_delay);
@@ -853,28 +879,56 @@ uint32_t getStepDelay(void)
 		if (new_delay < step_delay_low)
 			return step_delay_low;
 	}
+
 	else if (drive_flag == DECEL)
 	{
 		//		new_delay = (uint32_t)(WHEEL_CONSTANT / (-(step_delay_of_double * ACCELERATION_OF_GRAVITY * sin(fabs(filtered_angle.x / RADIANS_TO_DEGREES)) / cos(filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay_of_double)) * 1000000.0);
 		//		VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x / RADIANS_TO_DEGREES)));
 		//		new_delay = step_delay_low;
-		if (fabs(prev_filtered_angle_x) >= fabs(filtered_angle.x))
+		if (VELOCITY_CONSTANT == 0.0F)
 		{
-			//				new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * cos(filtered_angle.x  / RADIANS_TO_DEGREES)) + VELOCITY_CONSTANT) * 1000000.0F;
-			//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
-			new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x  / RADIANS_TO_DEGREES))) + VELOCITY_CONSTANT) * 1000000.0F;
-			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x / RADIANS_TO_DEGREES)));
+			//			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+			new_delay = step_delay_high;
+			if (step_delay_temp != 0UL)
+				step_delay_temp = 0UL;
+			//			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT));
+			//			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT));
+			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
 		}
 		else
 		{
-			//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
-			//				new_delay = step_delay_low;
-			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x / RADIANS_TO_DEGREES)));
-			new_delay = step_delay_low;
+			if (fabs(prev_filtered_angle_x) >= fabs(filtered_angle.x))
+			{
+				//				new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * cos(filtered_angle.x  / RADIANS_TO_DEGREES)) + VELOCITY_CONSTANT) * 1000000.0F;
+				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+				//				new_delay = (WHEEL_CONSTANT / (-(ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT)) + VELOCITY_CONSTANT)) * 1000000.0F;
+				//				new_delay = (WHEEL_CONSTANT / (-(ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT)) + VELOCITY_CONSTANT)) * 1000000.0F;
+				new_delay = (WHEEL_CONSTANT / (-(ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT)) + VELOCITY_CONSTANT)) * 1000000.0F;
+				if (step_delay_temp != 0UL)
+					step_delay_temp = 0UL;
+				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT));
+				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT));
+				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
+			}
+			else
+			{
+				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
+				//				new_delay = step_delay_low;
+				new_delay = step_delay_high;
+				if (step_delay_temp == 0UL)
+					step_delay_temp = step_delay;
+				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT));
+				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT));
+				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
+			}
 		}
-		if (new_delay > step_delay_vertical)
-			return step_delay_vertical;
+		if (new_delay >= step_delay_high)
+		{
+			drive_flag = READY;
+			return step_delay_high;
+		}
 	}
+
 	return new_delay;
 }
 
@@ -882,16 +936,13 @@ void adjustVelocityLimit(void)
 {
 	uint32_t step_delay_incline;
 
-	if (prev_angle != angle)
-	{
-		cos_val = cos(filtered_angle.x / RADIANS_TO_DEGREES);
-		step_delay_incline = (uint32_t)((float)step_delay_vertical * cos_val * beta);
+	cos_val = cos(filtered_angle.x / RADIANS_TO_DEGREES);
+	step_delay_incline = (uint32_t)((float)step_delay_high * fabs(cos_val) * LIMIT_BETA);
 
-		if (step_delay_incline < step_delay_horizontal)
-			step_delay_low = step_delay_horizontal;
-		else
-			step_delay_low = step_delay_incline;
-	}
+	if (step_delay_incline < step_delay_horizontal)
+		step_delay_low = step_delay_horizontal;
+	else
+		step_delay_low = step_delay_incline;
 }
 
 void reactToAngleGyro(void)
@@ -903,30 +954,44 @@ void reactToAngleGyro(void)
 	else
 		direction_flag = REAR;
 
-	if (((filtered_angle.x) >= -(boundary_inner)) && ((filtered_angle.x) <= (boundary_inner)))
+
+	if (fabs(filtered_angle.x) <= (boundary_inner))
 	{
-		if (step_delay == step_delay_vertical)
+		if (drive_flag == ACCEL)
 		{
-			prev_drive_flag = drive_flag;
+			drive_flag = RUN;
+		}
+		else if (drive_flag == READY)
+		{
 			drive_flag = HALT;
+		}
+	}
+	else if (fabs(filtered_angle.x) >= (boundary_outer))
+	{
+		if ((drive_flag == READY) || (drive_flag == HALT))
+		{
+			drive_flag = ACCEL;
+			if (direction_flag == FRONT)
+				rotation_flag = FORWARD;
+			else if (direction_flag == REAR)
+				rotation_flag = BACKWARD;
+			prev_direction_flag = direction_flag;
 		}
 		else if (prev_direction_flag != direction_flag)
 		{
-			prev_drive_flag = drive_flag;
 			drive_flag = DECEL;
-			prev_direction_flag = direction_flag;
 		}
 	}
-	else if ((drive_flag != ACCEL) || (prev_direction_flag != direction_flag))
-	{
-		prev_drive_flag = drive_flag;
-		drive_flag = ACCEL;
-		if (direction_flag == FRONT)
-			rotation_flag = FORWARD;
-		else if (direction_flag == REAR)
-			rotation_flag = BACKWARD;
-		prev_direction_flag = direction_flag;
-	}
+	//	else if ((drive_flag != ACCEL) || (prev_direction_flag != direction_flag))
+	//	{
+	//		prev_drive_flag = drive_flag;
+	//		drive_flag = ACCEL;
+	//		if (direction_flag == FRONT)
+	//			rotation_flag = FORWARD;
+	//		else if (direction_flag == REAR)
+	//			rotation_flag = BACKWARD;
+	//		prev_direction_flag = direction_flag;
+	//	}
 
 	adjustVelocityLimit();
 	step_delay = getStepDelay();
@@ -954,6 +1019,7 @@ void reactToAngleGyro(void)
 	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 	//		}
 	//	}
+
 
 	if (drive_flag == HALT)
 	{

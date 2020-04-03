@@ -12,7 +12,7 @@ extern MPU6050_int32_t diffgyro;
 extern uint32_t microTick;
 extern int8_t print_flag;
 
-const float RADIANS_TO_DEGREES = 180.0F / 3.14159F;
+const float RADIANS_TO_DEGREES = 180.0F / 3.141590F;
 const float GYROXYZ_TO_DEGREES_PER_SEC = 131.0F;
 
 uint32_t t_prev = 0;
@@ -32,8 +32,8 @@ float accel_xz, accel_yz;
 MPU6050_float_t tmp_angle = {0, 0, 0};
 MPU6050_float_t filtered_angle = {0, 0, 0};
 
-
-float ALPHA = 0.99;
+float COMPLEMENTARY_ALPHA = 0.990F;
+float REAL_DEGREE_COEFFICIENT = 0.0F;
 
 void initDT(void)
 {
@@ -94,10 +94,11 @@ void calcFilteredYPR()
 
 
 	prev_filtered_angle_x = filtered_angle.x;
-	filtered_angle.x = (ALPHA * tmp_angle.x) + ((1.0F-ALPHA) * accel_angle.x);
+	filtered_angle.x = (COMPLEMENTARY_ALPHA * tmp_angle.x) + ((1.0F-COMPLEMENTARY_ALPHA) * accel_angle.x);
 //	filtered_angle.y = (ALPHA * tmp_angle.y) + ((1.0F-ALPHA) * accel_angle.y);
 //	filtered_angle.z = tmp_angle.z;
 
-	prev_angle = angle;
-	angle = (int8_t)filtered_angle.x;
+//	prev_angle = angle;
+//	angle = (int8_t)filtered_angle.x;
+	REAL_DEGREE_COEFFICIENT = fabs((prev_filtered_angle_x - filtered_angle.x) / RADIANS_TO_DEGREES) / dt;
 }
