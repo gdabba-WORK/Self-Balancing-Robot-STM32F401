@@ -67,7 +67,7 @@ extern float LIMIT_BETA;
 extern float coefficient;
 extern int8_t angle;
 extern int8_t _angle;
-extern float dt;
+extern float dt_calc;
 extern HAL_StatusTypeDef status;
 int8_t print_flag = 0;
 extern float COMPLEMENTARY_ALPHA;
@@ -80,6 +80,8 @@ extern Robot_Drive drive_flag;
 extern float VELOCITY_CONSTANT;
 extern float DEGREE_COEFFICIENT;
 extern float REAL_DEGREE_COEFFICIENT;
+extern uint32_t dt_proc, t_from, t_to;
+extern int8_t zero_flag;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -484,7 +486,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		case 'd' :
 			step_delay_high = step_delay_high + 100UL;
 			break;
-		case '0' :
+		case ' ' :
 			sprintf(msg, "angle=%5.2f\t prev_angle=%5.2f\r\n", filtered_angle.x, prev_filtered_angle_x);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
@@ -533,7 +535,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.010f;
 			break;
 		case 't' :
-			sprintf(msg, "dt=%.6f\r\n", dt);
+			sprintf(msg, "dt_calc=%.6f\t dt_proc=%.10f\t t_from=%lu\t t_to=%lu\r\n", dt_calc, ((float)dt_proc / 1000000.0F), t_from, t_to);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case 'q' :
@@ -559,7 +561,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		case 'p' :
 			print_flag = !(print_flag);
 			break;
-
+		case 'r' :
+			sprintf(msg, "zero_flag=%hd\r\n", zero_flag);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
 		case 'P' :
 			sprintf(msg, "step_delay_high=%10lu\r\n", step_delay_high);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);

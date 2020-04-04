@@ -17,8 +17,9 @@ extern int8_t print_flag;
 extern int8_t angle, prev_angle;
 extern const float RADIANS_TO_DEGREES;
 extern float REAL_DEGREE_COEFFICIENT;
+extern uint32_t microTick;
 
-float boundary_inner = 0.30F;
+float boundary_inner = 0.50F;
 float boundary_outer = 1.00F;
 uint8_t step = 0U;
 int16_t step_max = 24;
@@ -35,6 +36,11 @@ uint32_t step_delay_temp = 0UL;
 uint32_t step_delay_total = 0UL;
 
 uint32_t prev_step_delay = 0UL;
+
+uint32_t dt_proc = 0UL;
+uint32_t t_from = 0UL;
+uint32_t t_to = 0UL;
+
 
 float alpha_former = 0.30F;
 float alpha_latter = 0.030F;
@@ -888,7 +894,7 @@ uint32_t getStepDelay(void)
 		if (VELOCITY_CONSTANT == 0.0F)
 		{
 			//			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
-			new_delay = step_delay_high;
+			new_delay = step_delay_high-1;
 			if (step_delay_temp != 0UL)
 				step_delay_temp = 0UL;
 			//			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT));
@@ -914,7 +920,7 @@ uint32_t getStepDelay(void)
 			{
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
 				//				new_delay = step_delay_low;
-				new_delay = step_delay_high;
+				new_delay = step_delay_high-1;
 				if (step_delay_temp == 0UL)
 					step_delay_temp = step_delay;
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT));
@@ -949,24 +955,26 @@ void reactToAngleGyro(void)
 {
 	char msg[150];
 
-	if (filtered_angle.x >= 0.0F)
+//	t_from = microTick;
+
+	if (filtered_angle.x > (boundary_inner))
 		direction_flag = FRONT;
-	else
+	else if (filtered_angle.x < (-boundary_inner))
 		direction_flag = REAR;
 
 
 	if (fabs(filtered_angle.x) <= (boundary_inner))
 	{
-		if (drive_flag == ACCEL)
-		{
-			drive_flag = RUN;
-		}
-		else if (drive_flag == READY)
+		if (REAL_DEGREE_COEFFICIENT <= 0.1F)
 		{
 			drive_flag = HALT;
 		}
+		else
+		{
+			drive_flag = RUN;
+		}
 	}
-	else if (fabs(filtered_angle.x) >= (boundary_outer))
+	else
 	{
 		if ((drive_flag == READY) || (drive_flag == HALT))
 		{
@@ -980,6 +988,7 @@ void reactToAngleGyro(void)
 		else if (prev_direction_flag != direction_flag)
 		{
 			drive_flag = DECEL;
+			prev_direction_flag = direction_flag;
 		}
 	}
 	//	else if ((drive_flag != ACCEL) || (prev_direction_flag != direction_flag))
@@ -1020,6 +1029,8 @@ void reactToAngleGyro(void)
 	//		}
 	//	}
 
+//	t_to = microTick;
+//	dt_proc = t_to - t_from;
 
 	if (drive_flag == HALT)
 	{

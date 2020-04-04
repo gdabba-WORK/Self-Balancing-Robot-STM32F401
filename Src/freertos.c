@@ -51,7 +51,7 @@ extern MPU6050_float_t filtered_angle;
 extern float accel_xz, accel_yz;
 extern MPU6050_float_t tmp_angle;
 extern MPU6050_float_t accel_angle;
-extern float dt;
+extern float dt_calc;
 extern int8_t print_flag;
 extern uint32_t t_prev, t_now;
 
