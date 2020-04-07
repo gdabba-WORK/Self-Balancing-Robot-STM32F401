@@ -11,18 +11,20 @@ extern MPU6050_int32_t diffacc;
 extern uint32_t microTick2;
 extern MPU6050_float_t accel_angle;
 extern MPU6050_float_t gyro_angle;
-extern MPU6050_float_t filtered_angle;
+extern MPU6050_float_t curr_filtered_angle;
+extern MPU6050_float_t accel;
 extern float prev_filtered_angle_x;
 extern int8_t print_flag;
-extern int8_t angle, prev_angle;
+extern int8_t angle;
 extern const float RADIANS_TO_DEGREES;
 extern float REAL_DEGREE_COEFFICIENT;
 extern uint32_t microTick;
+extern float dt_calc;
 
 float boundary_inner = 0.50F;
 float boundary_outer = 1.00F;
 uint8_t step = 0U;
-int16_t step_max = 24;
+int16_t step_max = 50;
 uint32_t step_total = 0UL;
 uint32_t step_delay_static = 1000UL;
 uint32_t step_delay_dynamic = 5UL;
@@ -31,7 +33,7 @@ uint32_t step_delay_vertical = 10000UL;
 uint32_t step_delay_horizontal = 2000UL;
 uint32_t step_delay_low = 10000UL;
 uint32_t step_delay_high = 10000UL;
-uint32_t step_delay = 10000UL;
+uint32_t step_delay = 5000UL;
 uint32_t step_delay_temp = 0UL;
 uint32_t step_delay_total = 0UL;
 
@@ -68,6 +70,19 @@ const float STEP_RADIAN = 0.020F;
 const float WHEEL_RADIUS = 0.0350F;
 const float WHEEL_CONSTANT = 0.00070F;
 float DEGREE_COEFFICIENT = 3.140F;
+const float AXIS_TO_SENSOR = 0.180F;
+
+uint32_t step_delay_to = 0UL;
+float max_angular_acceleration = 0.0F;
+float max_acceleration = 0.0F;
+extern float angular_acceleration;
+float prev_angle = 0.0F;
+float curr_angle = 0.0F;
+float dt_temp = 0.0F;
+float starting_angle = 0.0F;
+float inertia_moment_G = 0.0F;
+float inertia_moment_A = 0.0F;
+int8_t FIND = 0;
 
 void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
 		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_)
@@ -458,6 +473,190 @@ void step_reset(uint32_t step_delay)
 	MY_Delay(step_delay);
 }
 
+void new_delay(uint32_t step_delay)
+{
+	uint32_t start_tick = MY_GetTick();
+
+	while ((MY_GetTick() - start_tick) < step_delay)
+	{
+		if ((MY_GetTick() - start_tick) >= 1000UL)
+		{
+			if (angular_acceleration > max_angular_acceleration)
+			{
+				max_angular_acceleration = angular_acceleration;
+				prev_angle = fabs(prev_filtered_angle_x);
+				curr_angle = fabs(curr_filtered_angle.x);
+				dt_temp = dt_calc;
+			}
+
+			if (accel.y > max_acceleration)
+			{
+				max_acceleration = accel.y;
+			}
+		}
+		osThreadYield();
+	}
+}
+// A상
+void new_step_A(uint32_t step_delay)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
+	}
+	new_delay(step_delay);
+}
+
+// B상
+void new_step_B(uint32_t step_delay)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
+	}
+	new_delay(step_delay);
+}
+
+// `A상
+void new_step_a(uint32_t step_delay)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
+	}
+	new_delay(step_delay);
+}
+
+// `B상
+void new_step_b(uint32_t step_delay)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_SET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
+	}
+	new_delay(step_delay);
+}
+
+// AB상
+void new_step_AB(uint32_t step_delay)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
+	}
+	new_delay(step_delay);
+}
+
+// `AB상
+void new_step_aB(uint32_t step_delay)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_RESET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
+	}
+	new_delay(step_delay);
+}
+
+// `A`B상
+void new_step_ab(uint32_t step_delay)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_SET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
+	}
+	new_delay(step_delay);
+}
+
+// A`B상
+void new_step_Ab(uint32_t step_delay)
+{
+	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM1A_GPIO_Port, SM1A_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM1A__GPIO_Port, SM1A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B_GPIO_Port, SM1B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM1B__GPIO_Port, SM1B__Pin, GPIO_PIN_SET);
+	}
+	if ((state_flag & RIGHT_MOTOR) == RIGHT_MOTOR)
+	{
+		HAL_GPIO_WritePin(SM2A_GPIO_Port, SM2A_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SM2A__GPIO_Port, SM2A__Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
+	}
+	new_delay(step_delay);
+}
+
 void unipolar_parallel_sequence_onePhase(uint32_t step_delay)
 {
 	switch (step%4U) {
@@ -519,6 +718,28 @@ void unipolar_parallel_sequence_threePhase(uint32_t step_delay)
 		step_abA(step_delay); break;
 	case 3U :
 		step_bAB(step_delay); break;
+	}
+}
+
+void new_unipolar_parallel_sequence_onetwoPhase(uint32_t step_delay)
+{
+	switch (step%8) {
+	case 0U :
+		new_step_A(step_delay); break;
+	case 1U :
+		new_step_AB(step_delay); break;
+	case 2U :
+		new_step_B(step_delay); break;
+	case 3U :
+		new_step_aB(step_delay); break;
+	case 4U :
+		new_step_a(step_delay); break;
+	case 5U :
+		new_step_ab(step_delay); break;
+	case 6U :
+		new_step_b(step_delay); break;
+	case 7U :
+		new_step_Ab(step_delay); break;
 	}
 }
 
@@ -618,16 +839,16 @@ void reactToAngle(void)
 		//			prev_angle = (*angle);
 		//			step_delay_static = 0U;
 
-		if ((filtered_angle.x) >= -(boundary_outer) && (filtered_angle.x) <= (boundary_outer))
+		if ((curr_filtered_angle.x) >= -(boundary_outer) && (curr_filtered_angle.x) <= (boundary_outer))
 			direction_flag = STOP;
-		else if ((filtered_angle.x) > (boundary_outer))
+		else if ((curr_filtered_angle.x) > (boundary_outer))
 		{
 			direction_flag = FORWARD;
 			//			if ((*angle) <= 10)
 			//				step_delay_static = 1U;
 			//				step_delay_static = (uint8_t)(4 - abs(*angle)/2);
 		}
-		else if((filtered_angle.x) < -(boundary_outer))
+		else if((curr_filtered_angle.x) < -(boundary_outer))
 		{
 			direction_flag = BACKWARD;
 			//			if ((*angle) >= -10)
@@ -650,7 +871,7 @@ void reactToAngle(void)
 				//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 				sprintf(msg, "%-10s%10.6f\tf=%7.3f\ta=%7.3f\tg=%7.3f\r\n",
 						(direction_flag == FORWARD) ? "FORWARD" : "BACKWARD", (float)step_delay_total/1000000.0F,
-								filtered_angle.x, accel_angle.x, gyro_angle.x);
+								curr_filtered_angle.x, accel_angle.x, gyro_angle.x);
 				HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			}
 		}
@@ -847,22 +1068,22 @@ uint32_t getStepDelay(void)
 				step_delay_temp = 0UL;
 			//			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT));
 			//			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT));
-			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
+			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
 		}
 		else
 		{
-			if (fabs(prev_filtered_angle_x) >= fabs(filtered_angle.x))
+			if (fabs(prev_filtered_angle_x) >= fabs(curr_filtered_angle.x))
 			{
 				//				new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * cos(filtered_angle.x  / RADIANS_TO_DEGREES)) + VELOCITY_CONSTANT) * 1000000.0F;
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
 				//				new_delay = (WHEEL_CONSTANT / ((ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT)) + VELOCITY_CONSTANT)) * 1000000.0F;
 				//				new_delay = (WHEEL_CONSTANT / ((ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT)) + VELOCITY_CONSTANT)) * 1000000.0F;
-				new_delay = (WHEEL_CONSTANT / ((ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT)) + VELOCITY_CONSTANT)) * 1000000.0F;
+				new_delay = (WHEEL_CONSTANT / ((ACCELERATION_OF_GRAVITY * (logf(cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT)) + VELOCITY_CONSTANT)) * 1000000.0F;
 				if (step_delay_temp != 0UL)
 					step_delay_temp = 0UL;
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT));
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT));
-				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
+				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
 			}
 			else
 			{
@@ -873,7 +1094,7 @@ uint32_t getStepDelay(void)
 					step_delay_temp = step_delay;
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT));
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT));
-				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
+				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
 			}
 		}
 		//		new_delay = (uint32_t)(WHEEL_CONSTANT / (step_delay_of_double * (ACCELERATION_OF_GRAVITY * step_delay_of_double * sin(fabs(filtered_angle.x / RADIANS_TO_DEGREES)) / cos(filtered_angle.x / RADIANS_TO_DEGREES) + ACCELERATION_OF_RISING) + (WHEEL_CONSTANT / step_delay_of_double)) * 1000000.0);
@@ -899,22 +1120,22 @@ uint32_t getStepDelay(void)
 				step_delay_temp = 0UL;
 			//			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT));
 			//			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT));
-			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
+			VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
 		}
 		else
 		{
-			if (fabs(prev_filtered_angle_x) >= fabs(filtered_angle.x))
+			if (fabs(prev_filtered_angle_x) >= fabs(curr_filtered_angle.x))
 			{
 				//				new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * cos(filtered_angle.x  / RADIANS_TO_DEGREES)) + VELOCITY_CONSTANT) * 1000000.0F;
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
 				//				new_delay = (WHEEL_CONSTANT / (-(ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT)) + VELOCITY_CONSTANT)) * 1000000.0F;
 				//				new_delay = (WHEEL_CONSTANT / (-(ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT)) + VELOCITY_CONSTANT)) * 1000000.0F;
-				new_delay = (WHEEL_CONSTANT / (-(ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT)) + VELOCITY_CONSTANT)) * 1000000.0F;
+				new_delay = (WHEEL_CONSTANT / (-(ACCELERATION_OF_GRAVITY * (logf(cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT)) + VELOCITY_CONSTANT)) * 1000000.0F;
 				if (step_delay_temp != 0UL)
 					step_delay_temp = 0UL;
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT));
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT));
-				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
+				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
 			}
 			else
 			{
@@ -925,7 +1146,7 @@ uint32_t getStepDelay(void)
 					step_delay_temp = step_delay;
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * DEGREE_COEFFICIENT)) / DEGREE_COEFFICIENT));
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos((filtered_angle.x / RADIANS_TO_DEGREES) * REAL_DEGREE_COEFFICIENT)) / REAL_DEGREE_COEFFICIENT));
-				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos(filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
+				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * (logf(cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
 			}
 		}
 		if (new_delay >= step_delay_high)
@@ -942,7 +1163,7 @@ void adjustVelocityLimit(void)
 {
 	uint32_t step_delay_incline;
 
-	cos_val = cos(filtered_angle.x / RADIANS_TO_DEGREES);
+	cos_val = cos(curr_filtered_angle.x / RADIANS_TO_DEGREES);
 	step_delay_incline = (uint32_t)((float)step_delay_high * fabs(cos_val) * LIMIT_BETA);
 
 	if (step_delay_incline < step_delay_horizontal)
@@ -955,15 +1176,15 @@ void reactToAngleGyro(void)
 {
 	char msg[150];
 
-//	t_from = microTick;
+	//	t_from = microTick;
 
-	if (filtered_angle.x > (boundary_inner))
+	if (curr_filtered_angle.x > (boundary_inner))
 		direction_flag = FRONT;
-	else if (filtered_angle.x < (-boundary_inner))
+	else if (curr_filtered_angle.x < (-boundary_inner))
 		direction_flag = REAR;
 
 
-	if (fabs(filtered_angle.x) <= (boundary_inner))
+	if (fabs(curr_filtered_angle.x) <= (boundary_inner))
 	{
 		if (REAL_DEGREE_COEFFICIENT <= 0.1F)
 		{
@@ -1029,8 +1250,8 @@ void reactToAngleGyro(void)
 	//		}
 	//	}
 
-//	t_to = microTick;
-//	dt_proc = t_to - t_from;
+	//	t_to = microTick;
+	//	dt_proc = t_to - t_from;
 
 	if (drive_flag == HALT)
 	{
@@ -1049,5 +1270,136 @@ void reactToAngleGyro(void)
 		//					(direction_flag == FORWARD) ? "FORWARD" : "BACKWARD", filtered_angle.x, accel_angle.x, gyro_angle.x, cos_val, step_delay);
 		//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 		//		}
+	}
+}
+
+void momentFinder(void)
+{
+	char msg[150];
+	uint16_t count = 1;
+
+	if (FIND == 1)
+	{
+		prev_direction_flag = direction_flag;
+		prev_drive_flag = drive_flag;
+
+		if (step_max == 0)
+		{
+			drive_flag = HALT;
+			step_total = 0;
+			step_max = 80;
+			inertia_moment_G = ((cos(starting_angle / RADIANS_TO_DEGREES) * ((WHEEL_CONSTANT / (step_delay / 1000000.0F)) / 0.001F)) - (sin(starting_angle / RADIANS_TO_DEGREES) * ACCELERATION_OF_GRAVITY)) / (AXIS_TO_SENSOR * max_angular_acceleration);
+			inertia_moment_A = ((cos(starting_angle / RADIANS_TO_DEGREES) * ((WHEEL_CONSTANT / (step_delay / 1000000.0F)) / 0.001F)) + (sin(starting_angle / RADIANS_TO_DEGREES) * ACCELERATION_OF_GRAVITY)) / (AXIS_TO_SENSOR * max_acceleration);
+
+			sprintf(msg, "COUNT STARTING_ANGLE STEP_DELAY ANGULAR_ACC PREV_ANGLE CURR_ANGLE DT INERTIA_MOMENT_G INERTIA_MOMENT_A\r\n");
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "{\"CNT\":%03d,\"SD\":%05ld,\"SA\":%09.6f,\"AA\":%09.6f,\"PA\":%09.6f,\"CA\":%09.6f,\"DT\":%.6f,\"IMG\":%09.6f,\"IMA\":%09.6f}\r\n", count, step_delay, starting_angle, max_angular_acceleration, prev_angle, curr_angle, dt_temp, inertia_moment_G, inertia_moment_A);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+
+			count++;
+			max_angular_acceleration = 0.0F;
+			max_acceleration = 0.0F;
+			prev_angle = 0.0F;
+			curr_angle = 0.0F;
+			dt_temp = 0.0F;
+			inertia_moment_G = 0.0F;
+			inertia_moment_A = 0.0F;
+			starting_angle = 0.0F;
+		}
+		else
+			drive_flag = ACCEL;
+
+		if (curr_filtered_angle.x > (boundary_inner))
+		{
+			direction_flag = FRONT;
+			rotation_flag = FORWARD;
+		}
+		else if (curr_filtered_angle.x < (-boundary_inner))
+		{
+			direction_flag = REAR;
+			rotation_flag = FORWARD;
+		}
+		else
+		{
+			drive_flag = HALT;
+			step_total = 0;
+			step_max = 80;
+			inertia_moment_G = ((cos(starting_angle / RADIANS_TO_DEGREES) * ((WHEEL_CONSTANT / (step_delay / 1000000.0F)) / 0.001F)) - (sin(starting_angle / RADIANS_TO_DEGREES) * ACCELERATION_OF_GRAVITY)) / (AXIS_TO_SENSOR * max_angular_acceleration);
+			inertia_moment_A = ((cos(starting_angle / RADIANS_TO_DEGREES) * ((WHEEL_CONSTANT / (step_delay / 1000000.0F)) / 0.001F)) + (sin(starting_angle / RADIANS_TO_DEGREES) * ACCELERATION_OF_GRAVITY)) / (AXIS_TO_SENSOR * max_acceleration);
+
+			sprintf(msg, "COUNT STARTING_ANGLE STEP_DELAY ANGULAR_ACC PREV_ANGLE CURR_ANGLE DT INERTIA_MOMENT_G INERTIA_MOMENT_A\r\n");
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "{\"CNT\":%03d,\"SD\":%05ld,\"SA\":%09.6f,\"AA\":%09.6f,\"PA\":%09.6f,\"CA\":%09.6f,\"DT\":%.6f,\"IMG\":%09.6f,\"IMA\":%09.6f}\r\n", count, step_delay, starting_angle, max_angular_acceleration, prev_angle, curr_angle, dt_temp, inertia_moment_G, inertia_moment_A);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+
+			count++;
+			max_angular_acceleration = 0.0F;
+			max_acceleration = 0.0F;
+			prev_angle = 0.0F;
+			curr_angle = 0.0F;
+			dt_temp = 0.0F;
+			inertia_moment_G = 0.0F;
+			inertia_moment_A = 0.0F;
+			starting_angle = 0.0F;
+		}
+
+		//		if ((prev_drive_flag != HALT) && (drive_flag == HALT))
+		//		{
+		//			inertia_moment_G = ((cos(starting_angle / RADIANS_TO_DEGREES) * ((WHEEL_CONSTANT / (step_delay / 1000000.0F)) / 0.001F)) - (sin(starting_angle / RADIANS_TO_DEGREES) * ACCELERATION_OF_GRAVITY)) / (AXIS_TO_SENSOR * max_angular_acceleration);
+		//			inertia_moment_A = ((cos(starting_angle / RADIANS_TO_DEGREES) * ((WHEEL_CONSTANT / (step_delay / 1000000.0F)) / 0.001F)) + (sin(starting_angle / RADIANS_TO_DEGREES) * ACCELERATION_OF_GRAVITY)) / (AXIS_TO_SENSOR * max_acceleration);
+		//
+		//			sprintf(msg, "COUNT STARTING_ANGLE STEP_DELAY ANGULAR_ACC PREV_ANGLE CURR_ANGLE DT INERTIA_MOMENT_G INERTIA_MOMENT_A\r\n");
+		//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+		//			sprintf(msg, "{\"CNT\":%03d,\"SD\":%05ld,\"SA\":%09.6f,\"AA\":%09.6f,\"PA\":%09.6f,\"CA\":%09.6f,\"DT\":%.6f,\"IMG\":%09.6f,\"IMA\":%09.6f}\r\n", count, starting_angle, step_delay, max_angular_acceleration, prev_angle, curr_angle, dt_temp, inertia_moment_G, inertia_moment_A);
+		//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+		//
+		//			count++;
+		//			max_angular_acceleration = 0.0F;
+		//			max_acceleration = 0.0F;
+		//			prev_angle = 0.0F;
+		//			curr_angle = 0.0F;
+		//			dt_temp = 0.0F;
+		//			inertia_moment_G = 0.0F;
+		//			inertia_moment_A = 0.0F;
+		//			starting_angle = 0.0F;
+		//		}
+
+		if (drive_flag == HALT)
+		{
+			step_reset(5000000UL);
+		}
+		else
+		{
+			if (prev_drive_flag == HALT)
+			{
+				unipolar_parallel_sequence_onetwoPhase(1000000UL);
+				starting_angle = fabs(curr_filtered_angle.x);
+			}
+			else
+			{
+				if (rotation_flag == FORWARD)
+					step++;
+				else if (rotation_flag == BACKWARD)
+					step--;
+				new_unipolar_parallel_sequence_onetwoPhase(step_delay);
+
+				step_max--;
+				step_total++;
+				step_delay = step_delay + 100UL;
+			}
+		}
+
+		if (count > 100U)
+		{
+			FIND = 0;
+			max_angular_acceleration = 0.0F;
+			max_acceleration = 0.0F;
+			prev_angle = 0.0F;
+			curr_angle = 0.0F;
+			dt_temp = 0.0F;
+			inertia_moment_G = 0.0F;
+			inertia_moment_A = 0.0F;
+			starting_angle = 0.0F;
+		}
 	}
 }

@@ -71,7 +71,7 @@ extern float dt_calc;
 extern HAL_StatusTypeDef status;
 int8_t print_flag = 0;
 extern float COMPLEMENTARY_ALPHA;
-extern MPU6050_float_t filtered_angle;
+extern MPU6050_float_t curr_filtered_angle;
 extern float prev_filtered_angle_x;
 extern float cos_val;
 extern MPU6050_int16_t accOffset, gyroOffset;
@@ -82,6 +82,7 @@ extern float DEGREE_COEFFICIENT;
 extern float REAL_DEGREE_COEFFICIENT;
 extern uint32_t dt_proc, t_from, t_to;
 extern int8_t zero_flag;
+extern int8_t FIND;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -487,7 +488,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			step_delay_high = step_delay_high + 100UL;
 			break;
 		case ' ' :
-			sprintf(msg, "angle=%5.2f\t prev_angle=%5.2f\r\n", filtered_angle.x, prev_filtered_angle_x);
+			sprintf(msg, "angle=%5.2f\t prev_angle=%5.2f\r\n", curr_filtered_angle.x, prev_filtered_angle_x);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '+' :
@@ -536,6 +537,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			break;
 		case 't' :
 			sprintf(msg, "dt_calc=%.6f\t dt_proc=%.10f\t t_from=%lu\t t_to=%lu\r\n", dt_calc, ((float)dt_proc / 1000000.0F), t_from, t_to);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
+		case 'o' :
+			sprintf(msg, "gyroOffset=%10d\t%10d\t%10d\r\n", gyroOffset.x, gyroOffset.y, gyroOffset.z);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "accOffset=%10d\t%10d\t%10d\r\n", accOffset.x, accOffset.y, accOffset.z);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case 'q' :
@@ -588,6 +595,21 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			sprintf(msg, "accOffset=%10d\t%10d\t%10d\r\n", accOffset.x, accOffset.y, accOffset.z);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
+
+		case 'm' :
+			if (FIND == 0)
+				FIND = 1;
+			else
+				FIND = 0;
+			break;
+		case ',' :
+			if ((step_delay - 100UL) > 5000UL)
+				step_delay = step_delay - 100UL;
+			break;
+		case '.' :
+				step_delay = step_delay + 100UL;
+			break;
+
 		}
 		HAL_UART_Receive_IT(&huart1, &rx_data, 1);
 	}

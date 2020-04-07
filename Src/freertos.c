@@ -47,7 +47,7 @@ typedef StaticQueue_t osStaticMessageQDef_t;
 /* USER CODE BEGIN Variables */
 extern MPU6050_int16_t accOffset, gyroOffset;
 extern uint32_t microTick;
-extern MPU6050_float_t filtered_angle;
+extern MPU6050_float_t curr_filtered_angle;
 extern float accel_xz, accel_yz;
 extern MPU6050_float_t tmp_angle;
 extern MPU6050_float_t accel_angle;
@@ -340,7 +340,8 @@ void StartMotorSync(void *argument)
 //			}
 //			prev_tick = HAL_GetTick();
 //		}
-		reactToAngleGyro();
+//		reactToAngleGyro();
+		momentFinder();
 
 		//		if ((HAL_GetTick() - prev_tick2) >= 10000UL)
 		//		{

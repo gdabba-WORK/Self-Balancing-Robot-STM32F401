@@ -19,7 +19,6 @@ uint32_t t_prev = 0;
 uint32_t t_now = 0;
 float dt_calc = 0.0F;
 int8_t angle = 0;
-int8_t prev_angle = 0;
 float prev_filtered_angle_x = 0.0F;
 
 MPU6050_float_t accel = {0, 0, 0};
@@ -30,12 +29,15 @@ MPU6050_float_t gyro_angle = {0, 0, 0};
 
 float accel_xz, accel_yz;
 MPU6050_float_t tmp_angle = {0, 0, 0};
-MPU6050_float_t filtered_angle = {0, 0, 0};
+MPU6050_float_t curr_filtered_angle = {0, 0, 0};
 
 float COMPLEMENTARY_ALPHA = 0.990F;
 float REAL_DEGREE_COEFFICIENT = 0.0F;
 
 int8_t zero_flag = 0;
+
+float angular_acceleration = 0.0F;
+
 void initDT(void)
 {
 	t_prev = MY_GetTick();
@@ -89,19 +91,19 @@ void calcGyroYPR(void)
 
 void calcFilteredYPR()
 {
-	tmp_angle.x = filtered_angle.x + gyro_angle.x;
+	tmp_angle.x = curr_filtered_angle.x + gyro_angle.x;
 //	tmp_angle.y = filtered_angle.y + gyro_angle.y;
 //	tmp_angle.z = filtered_angle.z + gyro_angle.z;
 
 
-	prev_filtered_angle_x = filtered_angle.x;
-	filtered_angle.x = (COMPLEMENTARY_ALPHA * tmp_angle.x) + ((1.0F-COMPLEMENTARY_ALPHA) * accel_angle.x);
+	prev_filtered_angle_x = curr_filtered_angle.x;
+	curr_filtered_angle.x = (COMPLEMENTARY_ALPHA * tmp_angle.x) + ((1.0F-COMPLEMENTARY_ALPHA) * accel_angle.x);
 //	filtered_angle.y = (ALPHA * tmp_angle.y) + ((1.0F-ALPHA) * accel_angle.y);
 //	filtered_angle.z = tmp_angle.z;
 
-//	prev_angle = angle;
 //	angle = (int8_t)filtered_angle.x;
-	REAL_DEGREE_COEFFICIENT = fabs((prev_filtered_angle_x - filtered_angle.x) / RADIANS_TO_DEGREES) / dt_calc;
-	if (REAL_DEGREE_COEFFICIENT == 0.0F)
-		zero_flag = 1;
+//	REAL_DEGREE_COEFFICIENT = fabs((prev_filtered_angle_x - curr_filtered_angle.x) / RADIANS_TO_DEGREES) / dt_calc;
+//	if (REAL_DEGREE_COEFFICIENT == 0.0F)
+//		zero_flag = 1;
+	angular_acceleration = ((fabs(prev_filtered_angle_x) - fabs(curr_filtered_angle.x)) / RADIANS_TO_DEGREES) / dt_calc;
 }

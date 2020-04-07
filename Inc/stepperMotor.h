@@ -71,6 +71,14 @@ void step_AB(uint32_t step_delay);
 void step_aB(uint32_t step_delay);
 void step_ab(uint32_t step_delay);
 void step_Ab(uint32_t step_delay);
+void new_step_A(uint32_t step_delay);
+void new_step_B(uint32_t step_delay);
+void new_step_a(uint32_t step_delay);
+void new_step_b(uint32_t step_delay);
+void new_step_AB(uint32_t step_delay);
+void new_step_aB(uint32_t step_delay);
+void new_step_ab(uint32_t step_delay);
+void new_step_Ab(uint32_t step_delay);
 void step_ABa(uint32_t step_delay);
 void step_Bab(uint32_t step_delay);
 void step_abA(uint32_t step_delay);
@@ -81,6 +89,7 @@ void unipolar_parallel_sequence_onePhase(uint32_t step_delay);
 void unipolar_parallel_sequence_twoPhase(uint32_t step_delay);
 void unipolar_parallel_sequence_onetwoPhase(uint32_t step_delay);
 void unipolar_parallel_sequence_threePhase(uint32_t step_delay);
+void new_unipolar_parallel_sequence_onetwoPhase(uint32_t step_delay);
 
 //void reactToAccel_parallel(int8_t* angle);
 float getAlpha(void);
@@ -89,5 +98,7 @@ void reactToAngle(void);
 uint32_t getStepDelay(void);
 void adjustVelocityLimit(void);
 void reactToAngleGyro(void);
+
+void momentFinder(void);
 
 #endif /* STEPPERMOTOR_H_ */
