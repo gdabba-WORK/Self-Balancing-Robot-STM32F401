@@ -36,6 +36,8 @@ float REAL_DEGREE_COEFFICIENT = 0.0F;
 
 int8_t zero_flag = 0;
 
+float prev_angular_velocity = 0.0F;
+float curr_angular_velocity = 0.0F;
 float angular_acceleration = 0.0F;
 
 void initDT(void)
@@ -105,5 +107,7 @@ void calcFilteredYPR()
 //	REAL_DEGREE_COEFFICIENT = fabs((prev_filtered_angle_x - curr_filtered_angle.x) / RADIANS_TO_DEGREES) / dt_calc;
 //	if (REAL_DEGREE_COEFFICIENT == 0.0F)
 //		zero_flag = 1;
-	angular_acceleration = ((fabs(prev_filtered_angle_x) - fabs(curr_filtered_angle.x)) / RADIANS_TO_DEGREES) / dt_calc;
+	prev_angular_velocity = curr_angular_velocity;
+	curr_angular_velocity = ((fabs(prev_filtered_angle_x) - fabs(curr_filtered_angle.x)) / RADIANS_TO_DEGREES) / dt_calc;
+	angular_acceleration = (curr_angular_velocity - prev_angular_velocity) / dt_calc;
 }

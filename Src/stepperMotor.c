@@ -80,8 +80,7 @@ float prev_angle = 0.0F;
 float curr_angle = 0.0F;
 float dt_temp = 0.0F;
 float starting_angle = 0.0F;
-float inertia_moment_G = 0.0F;
-float inertia_moment_A = 0.0F;
+float inertia_moment = 0.0F;
 int8_t FIND = 0;
 
 void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
@@ -1276,7 +1275,7 @@ void reactToAngleGyro(void)
 void momentFinder(void)
 {
 	char msg[150];
-	uint16_t count = 1;
+	static uint16_t count = 1;
 
 	if (FIND == 1)
 	{
@@ -1287,83 +1286,78 @@ void momentFinder(void)
 		{
 			drive_flag = HALT;
 			step_total = 0;
-			step_max = 80;
-			inertia_moment_G = ((cos(starting_angle / RADIANS_TO_DEGREES) * ((WHEEL_CONSTANT / (step_delay / 1000000.0F)) / 0.001F)) - (sin(starting_angle / RADIANS_TO_DEGREES) * ACCELERATION_OF_GRAVITY)) / (AXIS_TO_SENSOR * max_angular_acceleration);
-			inertia_moment_A = ((cos(starting_angle / RADIANS_TO_DEGREES) * ((WHEEL_CONSTANT / (step_delay / 1000000.0F)) / 0.001F)) + (sin(starting_angle / RADIANS_TO_DEGREES) * ACCELERATION_OF_GRAVITY)) / (AXIS_TO_SENSOR * max_acceleration);
+			step_max = 50;
 
-			sprintf(msg, "COUNT STARTING_ANGLE STEP_DELAY ANGULAR_ACC PREV_ANGLE CURR_ANGLE DT INERTIA_MOMENT_G INERTIA_MOMENT_A\r\n");
-			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-			sprintf(msg, "{\"CNT\":%03d,\"SD\":%05ld,\"SA\":%09.6f,\"AA\":%09.6f,\"PA\":%09.6f,\"CA\":%09.6f,\"DT\":%.6f,\"IMG\":%09.6f,\"IMA\":%09.6f}\r\n", count, step_delay, starting_angle, max_angular_acceleration, prev_angle, curr_angle, dt_temp, inertia_moment_G, inertia_moment_A);
+//			sprintf(msg, "COUNT STEP_DELAY STARTING_ANGLE ACC ANGULAR_ACC PREV_ANGLE CURR_ANGLE DT\r\n");
+//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "{\"CNT\":%03u,\"SD\":%05lu,\"SA\":%09.6f,\"A\":%09.6f\"AA\":%09.6f,\"PA\":%09.6f,\"CA\":%09.6f,\"DT\":%.6f}\r\n", count, step_delay, starting_angle, max_acceleration, max_angular_acceleration, prev_angle, curr_angle, dt_temp);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 
 			count++;
+			step_delay = step_delay + 100UL;
 			max_angular_acceleration = 0.0F;
 			max_acceleration = 0.0F;
 			prev_angle = 0.0F;
 			curr_angle = 0.0F;
 			dt_temp = 0.0F;
-			inertia_moment_G = 0.0F;
-			inertia_moment_A = 0.0F;
+			inertia_moment = 0.0F;
 			starting_angle = 0.0F;
 		}
 		else
+		{
 			drive_flag = ACCEL;
 
-		if (curr_filtered_angle.x > (boundary_inner))
-		{
-			direction_flag = FRONT;
-			rotation_flag = FORWARD;
+			if (curr_filtered_angle.x > (boundary_inner))
+			{
+				direction_flag = FRONT;
+				rotation_flag = FORWARD;
+			}
+			else if (curr_filtered_angle.x < (-boundary_inner))
+			{
+				direction_flag = REAR;
+				rotation_flag = FORWARD;
+			}
+			else
+			{
+				drive_flag = HALT;
+				step_total = 0;
+				step_max = 50;
+
+				sprintf(msg, "{\"CNT\":%03u,\"SD\":%05lu,\"SA\":%09.6f,\"A\":%09.6f\"AA\":%09.6f,\"PA\":%09.6f,\"CA\":%09.6f,\"DT\":%.6f}\r\n", count, step_delay, starting_angle, max_acceleration, max_angular_acceleration, prev_angle, curr_angle, dt_temp);
+				HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+
+				count++;
+				step_delay = step_delay + 100UL;
+				max_angular_acceleration = 0.0F;
+				max_acceleration = 0.0F;
+				prev_angle = 0.0F;
+				curr_angle = 0.0F;
+				dt_temp = 0.0F;
+				inertia_moment = 0.0F;
+				starting_angle = 0.0F;
+			}
+
+			//		if ((prev_drive_flag != HALT) && (drive_flag == HALT))
+			//		{
+			//			inertia_moment_G = ((cos(starting_angle / RADIANS_TO_DEGREES) * ((WHEEL_CONSTANT / (step_delay / 1000000.0F)) / 0.001F)) - (sin(starting_angle / RADIANS_TO_DEGREES) * ACCELERATION_OF_GRAVITY)) / (AXIS_TO_SENSOR * max_angular_acceleration);
+			//			inertia_moment_A = ((cos(starting_angle / RADIANS_TO_DEGREES) * ((WHEEL_CONSTANT / (step_delay / 1000000.0F)) / 0.001F)) + (sin(starting_angle / RADIANS_TO_DEGREES) * ACCELERATION_OF_GRAVITY)) / (AXIS_TO_SENSOR * max_acceleration);
+			//
+			//			sprintf(msg, "COUNT STARTING_ANGLE STEP_DELAY ANGULAR_ACC PREV_ANGLE CURR_ANGLE DT INERTIA_MOMENT_G INERTIA_MOMENT_A\r\n");
+			//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			//			sprintf(msg, "{\"CNT\":%03d,\"SD\":%05ld,\"SA\":%09.6f,\"AA\":%09.6f,\"PA\":%09.6f,\"CA\":%09.6f,\"DT\":%.6f,\"IMG\":%09.6f,\"IMA\":%09.6f}\r\n", count, starting_angle, step_delay, max_angular_acceleration, prev_angle, curr_angle, dt_temp, inertia_moment_G, inertia_moment_A);
+			//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			//
+			//			count++;
+			//			max_angular_acceleration = 0.0F;
+			//			max_acceleration = 0.0F;
+			//			prev_angle = 0.0F;
+			//			curr_angle = 0.0F;
+			//			dt_temp = 0.0F;
+			//			inertia_moment_G = 0.0F;
+			//			inertia_moment_A = 0.0F;
+			//			starting_angle = 0.0F;
+			//		}
 		}
-		else if (curr_filtered_angle.x < (-boundary_inner))
-		{
-			direction_flag = REAR;
-			rotation_flag = FORWARD;
-		}
-		else
-		{
-			drive_flag = HALT;
-			step_total = 0;
-			step_max = 80;
-			inertia_moment_G = ((cos(starting_angle / RADIANS_TO_DEGREES) * ((WHEEL_CONSTANT / (step_delay / 1000000.0F)) / 0.001F)) - (sin(starting_angle / RADIANS_TO_DEGREES) * ACCELERATION_OF_GRAVITY)) / (AXIS_TO_SENSOR * max_angular_acceleration);
-			inertia_moment_A = ((cos(starting_angle / RADIANS_TO_DEGREES) * ((WHEEL_CONSTANT / (step_delay / 1000000.0F)) / 0.001F)) + (sin(starting_angle / RADIANS_TO_DEGREES) * ACCELERATION_OF_GRAVITY)) / (AXIS_TO_SENSOR * max_acceleration);
-
-			sprintf(msg, "COUNT STARTING_ANGLE STEP_DELAY ANGULAR_ACC PREV_ANGLE CURR_ANGLE DT INERTIA_MOMENT_G INERTIA_MOMENT_A\r\n");
-			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-			sprintf(msg, "{\"CNT\":%03d,\"SD\":%05ld,\"SA\":%09.6f,\"AA\":%09.6f,\"PA\":%09.6f,\"CA\":%09.6f,\"DT\":%.6f,\"IMG\":%09.6f,\"IMA\":%09.6f}\r\n", count, step_delay, starting_angle, max_angular_acceleration, prev_angle, curr_angle, dt_temp, inertia_moment_G, inertia_moment_A);
-			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-
-			count++;
-			max_angular_acceleration = 0.0F;
-			max_acceleration = 0.0F;
-			prev_angle = 0.0F;
-			curr_angle = 0.0F;
-			dt_temp = 0.0F;
-			inertia_moment_G = 0.0F;
-			inertia_moment_A = 0.0F;
-			starting_angle = 0.0F;
-		}
-
-		//		if ((prev_drive_flag != HALT) && (drive_flag == HALT))
-		//		{
-		//			inertia_moment_G = ((cos(starting_angle / RADIANS_TO_DEGREES) * ((WHEEL_CONSTANT / (step_delay / 1000000.0F)) / 0.001F)) - (sin(starting_angle / RADIANS_TO_DEGREES) * ACCELERATION_OF_GRAVITY)) / (AXIS_TO_SENSOR * max_angular_acceleration);
-		//			inertia_moment_A = ((cos(starting_angle / RADIANS_TO_DEGREES) * ((WHEEL_CONSTANT / (step_delay / 1000000.0F)) / 0.001F)) + (sin(starting_angle / RADIANS_TO_DEGREES) * ACCELERATION_OF_GRAVITY)) / (AXIS_TO_SENSOR * max_acceleration);
-		//
-		//			sprintf(msg, "COUNT STARTING_ANGLE STEP_DELAY ANGULAR_ACC PREV_ANGLE CURR_ANGLE DT INERTIA_MOMENT_G INERTIA_MOMENT_A\r\n");
-		//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-		//			sprintf(msg, "{\"CNT\":%03d,\"SD\":%05ld,\"SA\":%09.6f,\"AA\":%09.6f,\"PA\":%09.6f,\"CA\":%09.6f,\"DT\":%.6f,\"IMG\":%09.6f,\"IMA\":%09.6f}\r\n", count, starting_angle, step_delay, max_angular_acceleration, prev_angle, curr_angle, dt_temp, inertia_moment_G, inertia_moment_A);
-		//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-		//
-		//			count++;
-		//			max_angular_acceleration = 0.0F;
-		//			max_acceleration = 0.0F;
-		//			prev_angle = 0.0F;
-		//			curr_angle = 0.0F;
-		//			dt_temp = 0.0F;
-		//			inertia_moment_G = 0.0F;
-		//			inertia_moment_A = 0.0F;
-		//			starting_angle = 0.0F;
-		//		}
-
 		if (drive_flag == HALT)
 		{
 			step_reset(5000000UL);
@@ -1385,7 +1379,6 @@ void momentFinder(void)
 
 				step_max--;
 				step_total++;
-				step_delay = step_delay + 100UL;
 			}
 		}
 
@@ -1397,9 +1390,9 @@ void momentFinder(void)
 			prev_angle = 0.0F;
 			curr_angle = 0.0F;
 			dt_temp = 0.0F;
-			inertia_moment_G = 0.0F;
-			inertia_moment_A = 0.0F;
+			inertia_moment = 0.0F;
 			starting_angle = 0.0F;
+			count = 1U;
 		}
 	}
 }
