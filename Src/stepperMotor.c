@@ -12,7 +12,7 @@ extern uint32_t microTick2;
 extern MPU6050_float_t accel_angle;
 extern MPU6050_float_t gyro_angle;
 extern MPU6050_float_t curr_filtered_angle;
-extern MPU6050_float_t accel;
+extern MPU6050_float_t accel_f;
 extern float prev_filtered_angle_x;
 extern int8_t print_flag;
 extern int8_t angle;
@@ -53,7 +53,6 @@ float cos_val = 0.0F;
 
 Robot_Direction direction_flag = FRONT;
 Robot_Direction prev_direction_flag = FRONT;
-float prev_gyro_angle = 0.0F;
 
 Motor_Mode mode_flag = ONETWO_PHASE;
 Motor_State state_flag = BOTH_MOTOR;
@@ -74,11 +73,15 @@ const float AXIS_TO_SENSOR = 0.180F;
 
 uint32_t step_delay_to = 0UL;
 float max_angular_acceleration = 0.0F;
-float max_acceleration = 0.0F;
+float max_accelero_acceleration = 0.0F;
 extern float angular_acceleration;
-float prev_angle = 0.0F;
-float curr_angle = 0.0F;
-float dt_temp = 0.0F;
+extern float accelero_acceleration;
+float prev_angle_G = 0.0F;
+float curr_angle_G = 0.0F;
+float dt_temp_G = 0.0F;
+float prev_angle_A = 0.0F;
+float curr_angle_A = 0.0F;
+float dt_temp_A = 0.0F;
 float starting_angle = 0.0F;
 float inertia_moment = 0.0F;
 int8_t FIND = 0;
@@ -480,18 +483,22 @@ void new_delay(uint32_t step_delay)
 	{
 		if ((MY_GetTick() - start_tick) >= 1000UL)
 		{
-			if (angular_acceleration > max_angular_acceleration)
+			if (fabsf(angular_acceleration) > fabsf(max_angular_acceleration))
 			{
 				max_angular_acceleration = angular_acceleration;
-				prev_angle = fabs(prev_filtered_angle_x);
-				curr_angle = fabs(curr_filtered_angle.x);
-				dt_temp = dt_calc;
+				max_accelero_acceleration = accelero_acceleration;
+				prev_angle_G = prev_filtered_angle_x;
+				curr_angle_G = curr_filtered_angle.x;
+				dt_temp_G = dt_calc;
 			}
 
-			if (accel.y > max_acceleration)
-			{
-				max_acceleration = accel.y;
-			}
+//			if (fabsf(accelero_acceleration) > fabsf(max_accelero_acceleration))
+//			{
+//				max_accelero_acceleration = accelero_acceleration;
+//				prev_angle_A = prev_filtered_angle_x;
+//				curr_angle_A = curr_filtered_angle.x;
+//				dt_temp_A = dt_calc;
+//			}
 		}
 		osThreadYield();
 	}
@@ -1040,8 +1047,8 @@ void reactToAngleGyro(void)
 uint32_t getStepDelay(void)
 {
 	uint32_t new_delay = 0UL;
-	float step_delay_of_float = (float)step_delay / 1000000.0F;
-	char msg[50];
+	//	float step_delay_of_float = (float)step_delay / 1000000.0F;
+	//	char msg[50];
 
 	if (drive_flag == HALT)
 	{
@@ -1071,7 +1078,7 @@ uint32_t getStepDelay(void)
 		}
 		else
 		{
-			if (fabs(prev_filtered_angle_x) >= fabs(curr_filtered_angle.x))
+			if (fabsf(prev_filtered_angle_x) >= fabsf(curr_filtered_angle.x))
 			{
 				//				new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * cos(filtered_angle.x  / RADIANS_TO_DEGREES)) + VELOCITY_CONSTANT) * 1000000.0F;
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
@@ -1096,7 +1103,7 @@ uint32_t getStepDelay(void)
 				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay_temp / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * (logf(cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) / REAL_DEGREE_COEFFICIENT));
 			}
 		}
-		//		new_delay = (uint32_t)(WHEEL_CONSTANT / (step_delay_of_double * (ACCELERATION_OF_GRAVITY * step_delay_of_double * sin(fabs(filtered_angle.x / RADIANS_TO_DEGREES)) / cos(filtered_angle.x / RADIANS_TO_DEGREES) + ACCELERATION_OF_RISING) + (WHEEL_CONSTANT / step_delay_of_double)) * 1000000.0);
+		//		new_delay = (uint32_t)(WHEEL_CONSTANT / (step_delay_of_double * (ACCELERATION_OF_GRAVITY * step_delay_of_double * sin(fabsf(filtered_angle.x / RADIANS_TO_DEGREES)) / cos(filtered_angle.x / RADIANS_TO_DEGREES) + ACCELERATION_OF_RISING) + (WHEEL_CONSTANT / step_delay_of_double)) * 1000000.0);
 		//		if (print_flag)
 		//		{
 		//			sprintf(msg, "new_delay=%10lu\r\n", new_delay);
@@ -1108,7 +1115,7 @@ uint32_t getStepDelay(void)
 
 	else if (drive_flag == DECEL)
 	{
-		//		new_delay = (uint32_t)(WHEEL_CONSTANT / (-(step_delay_of_double * ACCELERATION_OF_GRAVITY * sin(fabs(filtered_angle.x / RADIANS_TO_DEGREES)) / cos(filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay_of_double)) * 1000000.0);
+		//		new_delay = (uint32_t)(WHEEL_CONSTANT / (-(step_delay_of_double * ACCELERATION_OF_GRAVITY * sin(fabsf(filtered_angle.x / RADIANS_TO_DEGREES)) / cos(filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay_of_double)) * 1000000.0);
 		//		VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) + (ACCELERATION_OF_GRAVITY * log10(cos(filtered_angle.x / RADIANS_TO_DEGREES)));
 		//		new_delay = step_delay_low;
 		if (VELOCITY_CONSTANT == 0.0F)
@@ -1123,7 +1130,7 @@ uint32_t getStepDelay(void)
 		}
 		else
 		{
-			if (fabs(prev_filtered_angle_x) >= fabs(curr_filtered_angle.x))
+			if (fabsf(prev_filtered_angle_x) >= fabsf(curr_filtered_angle.x))
 			{
 				//				new_delay = (STEP_RADIAN * WHEEL_RADIUS) / ((ACCELERATION_OF_GRAVITY * cos(filtered_angle.x  / RADIANS_TO_DEGREES)) + VELOCITY_CONSTANT) * 1000000.0F;
 				//				VELOCITY_CONSTANT = (WHEEL_CONSTANT / ((float)new_delay / 1000000.0F)) - (ACCELERATION_OF_GRAVITY * cos(filtered_angle.x / RADIANS_TO_DEGREES));
@@ -1163,7 +1170,7 @@ void adjustVelocityLimit(void)
 	uint32_t step_delay_incline;
 
 	cos_val = cos(curr_filtered_angle.x / RADIANS_TO_DEGREES);
-	step_delay_incline = (uint32_t)((float)step_delay_high * fabs(cos_val) * LIMIT_BETA);
+	step_delay_incline = (uint32_t)((float)step_delay_high * fabsf(cos_val) * LIMIT_BETA);
 
 	if (step_delay_incline < step_delay_horizontal)
 		step_delay_low = step_delay_horizontal;
@@ -1173,7 +1180,7 @@ void adjustVelocityLimit(void)
 
 void reactToAngleGyro(void)
 {
-	char msg[150];
+	//	char msg[150];
 
 	//	t_from = microTick;
 
@@ -1183,7 +1190,7 @@ void reactToAngleGyro(void)
 		direction_flag = REAR;
 
 
-	if (fabs(curr_filtered_angle.x) <= (boundary_inner))
+	if (fabsf(curr_filtered_angle.x) <= (boundary_inner))
 	{
 		if (REAL_DEGREE_COEFFICIENT <= 0.1F)
 		{
@@ -1288,18 +1295,31 @@ void momentFinder(void)
 			step_total = 0;
 			step_max = 50;
 
-//			sprintf(msg, "COUNT STEP_DELAY STARTING_ANGLE ACC ANGULAR_ACC PREV_ANGLE CURR_ANGLE DT\r\n");
-//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-			sprintf(msg, "{\"CNT\":%03u,\"SD\":%05lu,\"SA\":%09.6f,\"A\":%09.6f\"AA\":%09.6f,\"PA\":%09.6f,\"CA\":%09.6f,\"DT\":%.6f}\r\n", count, step_delay, starting_angle, max_acceleration, max_angular_acceleration, prev_angle, curr_angle, dt_temp);
-			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			//			sprintf(msg, "COUNT STEP_DELAY STARTING_ANGLE ACC_ACCEL PREV_ANGLE_A CURR_ANGLE_A DT_A ACC_GYRO PREV_ANGLE_G CURR_ANGLE_G DT_G\r\n");
+			//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			//			sprintf(msg, "{\"CNT\":%03u,\"SD\":%05lu,\"SA\":%09.6f,"
+			//					"\"AA\":%09.6f,\"PAA\":%09.6f,\"CAA\":%09.6f,\"DTA\":%.6f,"
+			//					"\"AG\":%09.6f,\"PAG\":%09.6f,\"CAG\":%09.6f,\"DTG\":%.6f}\r\n",
+			//					count, step_delay, starting_angle,
+			//					max_accelero_acceleration, prev_angle_A, curr_angle_A, dt_temp_A,
+			//					max_angular_acceleration, prev_angle_G, curr_angle_G, dt_temp_G);
+			//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 5000UL);
+			sprintf(msg, "\"%u\":{\"SD\":%lu,\"AG\":%.6f,\"AA\":%.6f,"
+					"\"SA\":%.6f,\"PAG\":%.6f,\"CAG\":%.6f,\"DTG\":%.6f},\r\n",
+					count, step_delay, max_angular_acceleration, max_accelero_acceleration,
+					starting_angle, prev_angle_G, curr_angle_G, dt_temp_G);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 5000UL);
 
 			count++;
 			step_delay = step_delay + 100UL;
-			max_angular_acceleration = 0.0F;
-			max_acceleration = 0.0F;
-			prev_angle = 0.0F;
-			curr_angle = 0.0F;
-			dt_temp = 0.0F;
+			max_angular_acceleration = 0.000000F;
+			prev_angle_G = 0.0F;
+			curr_angle_G = 0.0F;
+			dt_temp_G = 0.0F;
+			max_accelero_acceleration = 0.0F;
+			prev_angle_A = 0.0F;
+			curr_angle_A = 0.0F;
+			dt_temp_A = 0.0F;
 			inertia_moment = 0.0F;
 			starting_angle = 0.0F;
 		}
@@ -1315,7 +1335,7 @@ void momentFinder(void)
 			else if (curr_filtered_angle.x < (-boundary_inner))
 			{
 				direction_flag = REAR;
-				rotation_flag = FORWARD;
+				rotation_flag = BACKWARD;
 			}
 			else
 			{
@@ -1323,16 +1343,22 @@ void momentFinder(void)
 				step_total = 0;
 				step_max = 50;
 
-				sprintf(msg, "{\"CNT\":%03u,\"SD\":%05lu,\"SA\":%09.6f,\"A\":%09.6f\"AA\":%09.6f,\"PA\":%09.6f,\"CA\":%09.6f,\"DT\":%.6f}\r\n", count, step_delay, starting_angle, max_acceleration, max_angular_acceleration, prev_angle, curr_angle, dt_temp);
-				HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+				sprintf(msg, "\"%u\":{\"SD\":%lu,\"AG\":%.6f,\"AA\":%.6f,"
+						"\"SA\":%.6f,\"PAG\":%.6f,\"CAG\":%.6f,\"DTG\":%.6f}\r\n",
+						count, step_delay, max_angular_acceleration, max_accelero_acceleration,
+						starting_angle, prev_angle_G, curr_angle_G, dt_temp_G);
+				HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 5000UL);
 
 				count++;
 				step_delay = step_delay + 100UL;
-				max_angular_acceleration = 0.0F;
-				max_acceleration = 0.0F;
-				prev_angle = 0.0F;
-				curr_angle = 0.0F;
-				dt_temp = 0.0F;
+				max_angular_acceleration = 0.000000F;
+				prev_angle_G = 0.0F;
+				curr_angle_G = 0.0F;
+				dt_temp_G = 0.0F;
+				max_accelero_acceleration = 0.0F;
+				prev_angle_A = 0.0F;
+				curr_angle_A = 0.0F;
+				dt_temp_A = 0.0F;
 				inertia_moment = 0.0F;
 				starting_angle = 0.0F;
 			}
@@ -1367,7 +1393,7 @@ void momentFinder(void)
 			if (prev_drive_flag == HALT)
 			{
 				unipolar_parallel_sequence_onetwoPhase(1000000UL);
-				starting_angle = fabs(curr_filtered_angle.x);
+				starting_angle = fabsf(curr_filtered_angle.x);
 			}
 			else
 			{
@@ -1385,11 +1411,11 @@ void momentFinder(void)
 		if (count > 100U)
 		{
 			FIND = 0;
-			max_angular_acceleration = 0.0F;
-			max_acceleration = 0.0F;
-			prev_angle = 0.0F;
-			curr_angle = 0.0F;
-			dt_temp = 0.0F;
+			max_angular_acceleration = 0.0;
+			max_accelero_acceleration = 0.0F;
+			prev_angle_G = 0.0F;
+			curr_angle_G = 0.0F;
+			dt_temp_G = 0.0F;
 			inertia_moment = 0.0F;
 			starting_angle = 0.0F;
 			count = 1U;

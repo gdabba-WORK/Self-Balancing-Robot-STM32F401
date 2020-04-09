@@ -83,6 +83,8 @@ extern float REAL_DEGREE_COEFFICIENT;
 extern uint32_t dt_proc, t_from, t_to;
 extern int8_t zero_flag;
 extern int8_t FIND;
+extern float angular_acceleration;
+extern float accelero_acceleration;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -593,6 +595,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			sprintf(msg, "gyroOffset=%10d\t%10d\t%10d\r\n", gyroOffset.x, gyroOffset.y, gyroOffset.z);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			sprintf(msg, "accOffset=%10d\t%10d\t%10d\r\n", accOffset.x, accOffset.y, accOffset.z);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
+
+		case 'y' :
+			sprintf(msg, "angular_acceleration=%f\r\n", angular_acceleration);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
+		case 'u' :
+			sprintf(msg, "accelero_acceleration=%f\r\n", accelero_acceleration);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 

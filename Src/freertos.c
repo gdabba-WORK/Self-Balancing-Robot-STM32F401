@@ -197,6 +197,7 @@ void StartDefaultTask(void *argument)
 			calcAccelYPR();
 			calcGyroYPR();
 			calcFilteredYPR();
+			osThreadYield();
 		}
 		//		count++;
 		//		sprintf(msg, "status=%d\r\n", status);
