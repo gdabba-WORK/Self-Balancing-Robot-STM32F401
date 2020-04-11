@@ -481,25 +481,25 @@ void new_delay(uint32_t step_delay)
 
 	while ((MY_GetTick() - start_tick) < step_delay)
 	{
-		if ((MY_GetTick() - start_tick) >= 1000UL)
+		//		if ((MY_GetTick() - start_tick) >= 1000UL)
+		//		{
+		if (fabsf(angular_acceleration) > fabsf(max_angular_acceleration))
 		{
-			if (fabsf(angular_acceleration) > fabsf(max_angular_acceleration))
-			{
-				max_angular_acceleration = angular_acceleration;
-				max_accelero_acceleration = accelero_acceleration;
-				prev_angle_G = prev_filtered_angle_x;
-				curr_angle_G = curr_filtered_angle.x;
-				dt_temp_G = dt_calc;
-			}
-
-//			if (fabsf(accelero_acceleration) > fabsf(max_accelero_acceleration))
-//			{
-//				max_accelero_acceleration = accelero_acceleration;
-//				prev_angle_A = prev_filtered_angle_x;
-//				curr_angle_A = curr_filtered_angle.x;
-//				dt_temp_A = dt_calc;
-//			}
+			max_angular_acceleration = fabsf(angular_acceleration);
+			max_accelero_acceleration = fabsf(accelero_acceleration);
+			prev_angle_G = fabsf(prev_filtered_angle_x);
+			curr_angle_G = fabsf(curr_filtered_angle.x);
+			dt_temp_G = dt_calc;
 		}
+		//			}
+
+		//			if (fabsf(accelero_acceleration) > fabsf(max_accelero_acceleration))
+		//			{
+		//				max_accelero_acceleration = accelero_acceleration;
+		//				prev_angle_A = prev_filtered_angle_x;
+		//				curr_angle_A = curr_filtered_angle.x;
+		//				dt_temp_A = dt_calc;
+		//			}
 		osThreadYield();
 	}
 }
@@ -1279,7 +1279,7 @@ void reactToAngleGyro(void)
 	}
 }
 
-void momentFinder(void)
+void momentFinder_with_accel_and_torque(void)
 {
 	char msg[150];
 	static uint16_t count = 1;
@@ -1311,7 +1311,7 @@ void momentFinder(void)
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 5000UL);
 
 			count++;
-			step_delay = step_delay + 100UL;
+			//			step_delay = step_delay + 100UL;
 			max_angular_acceleration = 0.000000F;
 			prev_angle_G = 0.0F;
 			curr_angle_G = 0.0F;
@@ -1344,13 +1344,13 @@ void momentFinder(void)
 				step_max = 50;
 
 				sprintf(msg, "\"%u\":{\"SD\":%lu,\"AG\":%.6f,\"AA\":%.6f,"
-						"\"SA\":%.6f,\"PAG\":%.6f,\"CAG\":%.6f,\"DTG\":%.6f}\r\n",
+						"\"SA\":%.6f,\"PAG\":%.6f,\"CAG\":%.6f,\"DTG\":%.6f},\r\n",
 						count, step_delay, max_angular_acceleration, max_accelero_acceleration,
 						starting_angle, prev_angle_G, curr_angle_G, dt_temp_G);
 				HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 5000UL);
 
 				count++;
-				step_delay = step_delay + 100UL;
+				//				step_delay = step_delay + 100UL;
 				max_angular_acceleration = 0.000000F;
 				prev_angle_G = 0.0F;
 				curr_angle_G = 0.0F;
@@ -1386,7 +1386,7 @@ void momentFinder(void)
 		}
 		if (drive_flag == HALT)
 		{
-			step_reset(5000000UL);
+			step_reset(1000000UL);
 		}
 		else
 		{
@@ -1422,3 +1422,118 @@ void momentFinder(void)
 		}
 	}
 }
+/*
+void momentFinder_only_torque(void)
+{
+	char msg[150];
+
+	if (FIND == 1)
+	{
+		prev_direction_flag = direction_flag;
+		prev_drive_flag = drive_flag;
+
+		if (step_max == 0)
+		{
+			drive_flag = HALT;
+			step_total = 0;
+			step_max = 50;
+
+			sprintf(msg, "\"%u\":{\"SD\":%lu,\"AG\":%.6f,\"AA\":%.6f,"
+					"\"SA\":%.6f,\"PAG\":%.6f,\"CAG\":%.6f,\"DTG\":%.6f},\r\n",
+					count, step_delay, max_angular_acceleration, max_accelero_acceleration,
+					starting_angle, prev_angle_G, curr_angle_G, dt_temp_G);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 5000UL);
+
+			count++;
+			//			step_delay = step_delay + 100UL;
+			max_angular_acceleration = 0.000000F;
+			prev_angle_G = 0.0F;
+			curr_angle_G = 0.0F;
+			dt_temp_G = 0.0F;
+			max_accelero_acceleration = 0.0F;
+			prev_angle_A = 0.0F;
+			curr_angle_A = 0.0F;
+			dt_temp_A = 0.0F;
+			inertia_moment = 0.0F;
+			starting_angle = 0.0F;
+		}
+		else
+		{
+			drive_flag = ACCEL;
+
+			if (curr_filtered_angle.x > (boundary_inner))
+			{
+				direction_flag = FRONT;
+				rotation_flag = FORWARD;
+			}
+			else if (curr_filtered_angle.x < (-boundary_inner))
+			{
+				direction_flag = REAR;
+				rotation_flag = BACKWARD;
+			}
+			else
+			{
+				drive_flag = HALT;
+				step_total = 0;
+				step_max = 50;
+
+				sprintf(msg, "\"%u\":{\"SD\":%lu,\"AG\":%.6f,\"AA\":%.6f,"
+						"\"SA\":%.6f,\"PAG\":%.6f,\"CAG\":%.6f,\"DTG\":%.6f},\r\n",
+						count, step_delay, max_angular_acceleration, max_accelero_acceleration,
+						starting_angle, prev_angle_G, curr_angle_G, dt_temp_G);
+				HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 5000UL);
+
+				count++;
+				//				step_delay = step_delay + 100UL;
+				max_angular_acceleration = 0.000000F;
+				prev_angle_G = 0.0F;
+				curr_angle_G = 0.0F;
+				dt_temp_G = 0.0F;
+				max_accelero_acceleration = 0.0F;
+				prev_angle_A = 0.0F;
+				curr_angle_A = 0.0F;
+				dt_temp_A = 0.0F;
+				inertia_moment = 0.0F;
+				starting_angle = 0.0F;
+			}
+
+		}
+		if (drive_flag == HALT)
+		{
+			step_reset(1000000UL);
+		}
+		else
+		{
+			if (prev_drive_flag == HALT)
+			{
+				unipolar_parallel_sequence_onetwoPhase(1000000UL);
+				starting_angle = fabsf(curr_filtered_angle.x);
+			}
+			else
+			{
+				if (rotation_flag == FORWARD)
+					step++;
+				else if (rotation_flag == BACKWARD)
+					step--;
+				new_unipolar_parallel_sequence_onetwoPhase(step_delay);
+
+				step_max--;
+				step_total++;
+			}
+		}
+
+		if (count > 100U)
+		{
+			FIND = 0;
+			max_angular_acceleration = 0.0;
+			max_accelero_acceleration = 0.0F;
+			prev_angle_G = 0.0F;
+			curr_angle_G = 0.0F;
+			dt_temp_G = 0.0F;
+			inertia_moment = 0.0F;
+			starting_angle = 0.0F;
+			count = 1U;
+		}
+	}
+}
+*/

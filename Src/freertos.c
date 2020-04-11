@@ -66,27 +66,27 @@ uint32_t sync_period = 20UL;
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-		.name = "defaultTask",
-		.priority = (osPriority_t) osPriorityNormal,
-		.stack_size = 1024
+  .name = "defaultTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 1024
 };
 /* Definitions for motorSync */
 osThreadId_t motorSyncHandle;
 const osThreadAttr_t motorSync_attributes = {
-		.name = "motorSync",
-		.priority = (osPriority_t) osPriorityNormal,
-		.stack_size = 1024
+  .name = "motorSync",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 1024
 };
 /* Definitions for myQueue01 */
 osMessageQueueId_t myQueue01Handle;
 uint8_t myQueue01Buffer[ 1 * sizeof( int8_t ) ];
 osStaticMessageQDef_t myQueue01ControlBlock;
 const osMessageQueueAttr_t myQueue01_attributes = {
-		.name = "myQueue01",
-		.cb_mem = &myQueue01ControlBlock,
-		.cb_size = sizeof(myQueue01ControlBlock),
-		.mq_mem = &myQueue01Buffer,
-		.mq_size = sizeof(myQueue01Buffer)
+  .name = "myQueue01",
+  .cb_mem = &myQueue01ControlBlock,
+  .cb_size = sizeof(myQueue01ControlBlock),
+  .mq_mem = &myQueue01Buffer,
+  .mq_size = sizeof(myQueue01Buffer)
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -100,46 +100,46 @@ void StartMotorSync(void *argument);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /**
- * @brief  FreeRTOS initialization
- * @param  None
- * @retval None
- */
+  * @brief  FreeRTOS initialization
+  * @param  None
+  * @retval None
+  */
 void MX_FREERTOS_Init(void) {
-	/* USER CODE BEGIN Init */
+  /* USER CODE BEGIN Init */
 
 
-	/* USER CODE END Init */
+  /* USER CODE END Init */
 
-	/* USER CODE BEGIN RTOS_MUTEX */
+  /* USER CODE BEGIN RTOS_MUTEX */
 	/* add mutexes, ... */
-	/* USER CODE END RTOS_MUTEX */
+  /* USER CODE END RTOS_MUTEX */
 
-	/* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
 	/* add semaphores, ... */
-	/* USER CODE END RTOS_SEMAPHORES */
+  /* USER CODE END RTOS_SEMAPHORES */
 
-	/* USER CODE BEGIN RTOS_TIMERS */
+  /* USER CODE BEGIN RTOS_TIMERS */
 	/* start timers, add new ones, ... */
-	/* USER CODE END RTOS_TIMERS */
+  /* USER CODE END RTOS_TIMERS */
 
-	/* Create the queue(s) */
-	/* creation of myQueue01 */
-	myQueue01Handle = osMessageQueueNew (1, sizeof(int8_t), &myQueue01_attributes);
+  /* Create the queue(s) */
+  /* creation of myQueue01 */
+  myQueue01Handle = osMessageQueueNew (1, sizeof(int8_t), &myQueue01_attributes);
 
-	/* USER CODE BEGIN RTOS_QUEUES */
+  /* USER CODE BEGIN RTOS_QUEUES */
 	/* add queues, ... */
-	/* USER CODE END RTOS_QUEUES */
+  /* USER CODE END RTOS_QUEUES */
 
-	/* Create the thread(s) */
-	/* creation of defaultTask */
-	defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  /* Create the thread(s) */
+  /* creation of defaultTask */
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-	/* creation of motorSync */
-	motorSyncHandle = osThreadNew(StartMotorSync, NULL, &motorSync_attributes);
+  /* creation of motorSync */
+  motorSyncHandle = osThreadNew(StartMotorSync, NULL, &motorSync_attributes);
 
-	/* USER CODE BEGIN RTOS_THREADS */
+  /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
-	/* USER CODE END RTOS_THREADS */
+  /* USER CODE END RTOS_THREADS */
 
 }
 
@@ -152,7 +152,7 @@ void MX_FREERTOS_Init(void) {
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
-	/* USER CODE BEGIN StartDefaultTask */
+  /* USER CODE BEGIN StartDefaultTask */
 //	char msg[50];
 //	osStatus_t status = osError;
 //	uint32_t prev_tick;
@@ -197,6 +197,10 @@ void StartDefaultTask(void *argument)
 			calcAccelYPR();
 			calcGyroYPR();
 			calcFilteredYPR();
+			if (fabs(curr_filtered_angle.x) <= 1.0F)
+				HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_SET);
+			else
+				HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_RESET);
 			osThreadYield();
 		}
 		//		count++;
@@ -285,7 +289,7 @@ void StartDefaultTask(void *argument)
 		//		printf(msg);
 		//		osDelay(1);
 	}
-	/* USER CODE END StartDefaultTask */
+  /* USER CODE END StartDefaultTask */
 }
 
 /* USER CODE BEGIN Header_StartMotorSync */
@@ -297,7 +301,7 @@ void StartDefaultTask(void *argument)
 /* USER CODE END Header_StartMotorSync */
 void StartMotorSync(void *argument)
 {
-	/* USER CODE BEGIN StartMotorSync */
+  /* USER CODE BEGIN StartMotorSync */
 //	osStatus_t status = osError;
 //	GPIO_PinState prev_state =GPIO_PIN_RESET;
 //	uint32_t prev_tick;
@@ -343,7 +347,7 @@ void StartMotorSync(void *argument)
 //			prev_tick = HAL_GetTick();
 //		}
 //		reactToAngleGyro();
-		momentFinder();
+		momentFinder_with_accel_and_torque();
 
 		//		if ((HAL_GetTick() - prev_tick2) >= 10000UL)
 		//		{
@@ -352,7 +356,7 @@ void StartMotorSync(void *argument)
 		//			prev_tick2 = HAL_GetTick();
 		//		}
 	}
-	/* USER CODE END StartMotorSync */
+  /* USER CODE END StartMotorSync */
 }
 
 /* Private application code --------------------------------------------------*/
