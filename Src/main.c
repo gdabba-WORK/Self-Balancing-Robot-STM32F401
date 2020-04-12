@@ -52,7 +52,7 @@ uint8_t rx_data = 0;
 extern uint32_t step_delay_static, step_delay_dynamic;
 extern uint32_t step_delay_low, step_delay_high, step_delay_vertical, step_delay_horizontal;
 extern uint32_t step_delay;
-extern int16_t step_max;
+extern uint16_t step_max;
 extern Robot_Direction direction_flag;
 extern Motor_Rotation rotation_flag;
 extern Motor_Mode mode_flag;
@@ -82,9 +82,13 @@ extern float DEGREE_COEFFICIENT;
 extern float REAL_DEGREE_COEFFICIENT;
 extern uint32_t dt_proc, t_from, t_to;
 extern int8_t zero_flag;
-extern int8_t FIND;
+extern int8_t find_flag;
 extern float angular_acceleration;
 extern float accelero_acceleration;
+extern int8_t init_flag;
+extern int8_t excite_flag;
+extern uint8_t step_remain;
+extern uint8_t step;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -480,7 +484,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case 's' :
-			sprintf(msg, "step_delay=%10lu\t step_delay_low=%10lu\t step_delay_high=%10lu\r\n", step_delay, step_delay_low, step_delay_high);
+			sprintf(msg, "step=%3u\t step_delay=%10lu\t step_delay_low=%10lu\t step_delay_high=%10lu\r\n", step, step_delay, step_delay_low, step_delay_high);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case 'a' :
@@ -608,19 +612,32 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			break;
 
 		case 'm' :
-			if (FIND == 0)
-				FIND = 1;
+			if (find_flag == 0)
+				find_flag = 1;
 			else
-				FIND = 0;
+				find_flag = 0;
 			break;
 		case ',' :
-			if ((step_delay - 100UL) > 5000UL)
 				step_delay = step_delay - 100UL;
 			break;
 		case '.' :
 				step_delay = step_delay + 100UL;
 			break;
 
+		case 'i' :
+			init_flag = 1;
+			break;
+		case '=' :
+			excite_flag = !(excite_flag);
+			break;
+		case ']' :
+			step_remain = step_remain + 1U;
+			rotation_flag = FORWARD;
+			break;
+		case '[' :
+			step_remain = step_remain + 1U;
+			rotation_flag = BACKWARD;
+			break;
 		}
 		HAL_UART_Receive_IT(&huart1, &rx_data, 1);
 	}

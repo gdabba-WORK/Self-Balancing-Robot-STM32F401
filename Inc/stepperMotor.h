@@ -99,6 +99,6 @@ uint32_t getStepDelay(void);
 void adjustVelocityLimit(void);
 void reactToAngleGyro(void);
 
-void momentFinder(void);
-
+void momentFinder_with_accel_and_torque(void);
+void momentFinder_only_torque(void);
 #endif /* STEPPERMOTOR_H_ */

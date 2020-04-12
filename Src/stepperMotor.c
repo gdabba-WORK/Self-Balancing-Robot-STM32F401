@@ -23,8 +23,9 @@ extern float dt_calc;
 
 float boundary_inner = 0.50F;
 float boundary_outer = 1.00F;
-uint8_t step = 0U;
-int16_t step_max = 50;
+uint8_t step = 1U;
+uint8_t step_remain = 0U;
+uint16_t step_max = 50U;
 uint32_t step_total = 0UL;
 uint32_t step_delay_static = 1000UL;
 uint32_t step_delay_dynamic = 5UL;
@@ -33,7 +34,7 @@ uint32_t step_delay_vertical = 10000UL;
 uint32_t step_delay_horizontal = 2000UL;
 uint32_t step_delay_low = 10000UL;
 uint32_t step_delay_high = 10000UL;
-uint32_t step_delay = 5000UL;
+uint32_t step_delay = 1000UL;
 uint32_t step_delay_temp = 0UL;
 uint32_t step_delay_total = 0UL;
 
@@ -84,7 +85,9 @@ float curr_angle_A = 0.0F;
 float dt_temp_A = 0.0F;
 float starting_angle = 0.0F;
 float inertia_moment = 0.0F;
-int8_t FIND = 0;
+int8_t find_flag = 0;
+
+int8_t excite_flag = 0;
 
 void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
 		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_)
@@ -827,7 +830,7 @@ float getAlpha(void)
 {
 	return ((float)(step_delay_high - step_delay_low) * 16.0F / (float)(step_max * step_max));
 }
-
+/*
 void reactToAngle(void)
 {
 	//	static Robot_Direction prev_direction_flag = STOP;
@@ -935,7 +938,7 @@ void reactToAngle(void)
 			//			if (step_delay_dynamic > step_delay_static)
 			//				step_delay_dynamic--;
 			step_remain--;
-			if (step_remain > (step_max * 3 / 4))
+			if (step_remain > (int16_t)(step_max * 3 / 4))
 				step_delay = (uint32_t)(alpha_former * (float)(step_remain - (step_max * 3 / 4))*(float)(step_remain - (step_max * 3 / 4))) + step_delay_low;
 			else
 				step_delay = (uint32_t)(alpha_latter * (float)(step_remain - (step_max * 3 / 4))*(float)(step_remain - (step_max * 3 / 4))) + step_delay_low;
@@ -943,6 +946,8 @@ void reactToAngle(void)
 		}
 	}
 }
+ */
+
 /*
 uint32_t getStepDelay(void)
 {
@@ -1282,18 +1287,18 @@ void reactToAngleGyro(void)
 void momentFinder_with_accel_and_torque(void)
 {
 	char msg[150];
-	static uint16_t count = 1;
+	static uint16_t count = 1U;
 
-	if (FIND == 1)
+	if (find_flag == 1)
 	{
 		prev_direction_flag = direction_flag;
 		prev_drive_flag = drive_flag;
 
-		if (step_max == 0)
+		if (step_max == 0U)
 		{
 			drive_flag = HALT;
-			step_total = 0;
-			step_max = 50;
+			step_total = 0UL;
+			step_max = 50U;
 
 			//			sprintf(msg, "COUNT STEP_DELAY STARTING_ANGLE ACC_ACCEL PREV_ANGLE_A CURR_ANGLE_A DT_A ACC_GYRO PREV_ANGLE_G CURR_ANGLE_G DT_G\r\n");
 			//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
@@ -1340,8 +1345,8 @@ void momentFinder_with_accel_and_torque(void)
 			else
 			{
 				drive_flag = HALT;
-				step_total = 0;
-				step_max = 50;
+				step_total = 0UL;
+				step_max = 50U;
 
 				sprintf(msg, "\"%u\":{\"SD\":%lu,\"AG\":%.6f,\"AA\":%.6f,"
 						"\"SA\":%.6f,\"PAG\":%.6f,\"CAG\":%.6f,\"DTG\":%.6f},\r\n",
@@ -1351,7 +1356,7 @@ void momentFinder_with_accel_and_torque(void)
 
 				count++;
 				//				step_delay = step_delay + 100UL;
-				max_angular_acceleration = 0.000000F;
+				max_angular_acceleration = 0.0F;
 				prev_angle_G = 0.0F;
 				curr_angle_G = 0.0F;
 				dt_temp_G = 0.0F;
@@ -1410,8 +1415,8 @@ void momentFinder_with_accel_and_torque(void)
 
 		if (count > 100U)
 		{
-			FIND = 0;
-			max_angular_acceleration = 0.0;
+			find_flag = 0;
+			max_angular_acceleration = 0.0F;
 			max_accelero_acceleration = 0.0F;
 			prev_angle_G = 0.0F;
 			curr_angle_G = 0.0F;
@@ -1422,31 +1427,37 @@ void momentFinder_with_accel_and_torque(void)
 		}
 	}
 }
-/*
+
 void momentFinder_only_torque(void)
 {
 	char msg[150];
+	static uint16_t count = 1U;
 
-	if (FIND == 1)
+	if (excite_flag == 1)
 	{
-		prev_direction_flag = direction_flag;
-		prev_drive_flag = drive_flag;
+		unipolar_parallel_sequence_onetwoPhase(1000000UL);
+		starting_angle = fabsf(curr_filtered_angle.x);
 
-		if (step_max == 0)
+		if (step_remain != 0U)
 		{
-			drive_flag = HALT;
-			step_total = 0;
-			step_max = 50;
+			if (rotation_flag == FORWARD)
+				step++;
+			else if (rotation_flag == BACKWARD)
+				step--;
+			new_unipolar_parallel_sequence_onetwoPhase(step_delay);
 
-			sprintf(msg, "\"%u\":{\"SD\":%lu,\"AG\":%.6f,\"AA\":%.6f,"
-					"\"SA\":%.6f,\"PAG\":%.6f,\"CAG\":%.6f,\"DTG\":%.6f},\r\n",
-					count, step_delay, max_angular_acceleration, max_accelero_acceleration,
-					starting_angle, prev_angle_G, curr_angle_G, dt_temp_G);
-			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 5000UL);
+			step_remain--;
+			if (rotation_flag == BACKWARD)
+			{
+				sprintf(msg, "\"%u\":{\"SD\":%lu,\"AG\":%.6f,\"AA\":%.6f,"
+						"\"SA\":%.6f,\"PAG\":%.6f,\"CAG\":%.6f,\"DTG\":%.6f},\r\n",
+						count, step_delay, max_angular_acceleration, max_accelero_acceleration,
+						starting_angle, prev_angle_G, curr_angle_G, dt_temp_G);
+				HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 5000UL);
+				count++;
+			}
 
-			count++;
-			//			step_delay = step_delay + 100UL;
-			max_angular_acceleration = 0.000000F;
+			max_angular_acceleration = 0.0F;
 			prev_angle_G = 0.0F;
 			curr_angle_G = 0.0F;
 			dt_temp_G = 0.0F;
@@ -1454,86 +1465,11 @@ void momentFinder_only_torque(void)
 			prev_angle_A = 0.0F;
 			curr_angle_A = 0.0F;
 			dt_temp_A = 0.0F;
-			inertia_moment = 0.0F;
 			starting_angle = 0.0F;
-		}
-		else
-		{
-			drive_flag = ACCEL;
-
-			if (curr_filtered_angle.x > (boundary_inner))
-			{
-				direction_flag = FRONT;
-				rotation_flag = FORWARD;
-			}
-			else if (curr_filtered_angle.x < (-boundary_inner))
-			{
-				direction_flag = REAR;
-				rotation_flag = BACKWARD;
-			}
-			else
-			{
-				drive_flag = HALT;
-				step_total = 0;
-				step_max = 50;
-
-				sprintf(msg, "\"%u\":{\"SD\":%lu,\"AG\":%.6f,\"AA\":%.6f,"
-						"\"SA\":%.6f,\"PAG\":%.6f,\"CAG\":%.6f,\"DTG\":%.6f},\r\n",
-						count, step_delay, max_angular_acceleration, max_accelero_acceleration,
-						starting_angle, prev_angle_G, curr_angle_G, dt_temp_G);
-				HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 5000UL);
-
-				count++;
-				//				step_delay = step_delay + 100UL;
-				max_angular_acceleration = 0.000000F;
-				prev_angle_G = 0.0F;
-				curr_angle_G = 0.0F;
-				dt_temp_G = 0.0F;
-				max_accelero_acceleration = 0.0F;
-				prev_angle_A = 0.0F;
-				curr_angle_A = 0.0F;
-				dt_temp_A = 0.0F;
-				inertia_moment = 0.0F;
-				starting_angle = 0.0F;
-			}
-
-		}
-		if (drive_flag == HALT)
-		{
-			step_reset(1000000UL);
-		}
-		else
-		{
-			if (prev_drive_flag == HALT)
-			{
-				unipolar_parallel_sequence_onetwoPhase(1000000UL);
-				starting_angle = fabsf(curr_filtered_angle.x);
-			}
-			else
-			{
-				if (rotation_flag == FORWARD)
-					step++;
-				else if (rotation_flag == BACKWARD)
-					step--;
-				new_unipolar_parallel_sequence_onetwoPhase(step_delay);
-
-				step_max--;
-				step_total++;
-			}
-		}
-
-		if (count > 100U)
-		{
-			FIND = 0;
-			max_angular_acceleration = 0.0;
-			max_accelero_acceleration = 0.0F;
-			prev_angle_G = 0.0F;
-			curr_angle_G = 0.0F;
-			dt_temp_G = 0.0F;
-			inertia_moment = 0.0F;
-			starting_angle = 0.0F;
-			count = 1U;
 		}
 	}
+	else if (excite_flag == 0)
+	{
+		step_reset(1000000UL);
+	}
 }
-*/
