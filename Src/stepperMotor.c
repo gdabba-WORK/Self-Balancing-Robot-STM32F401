@@ -20,21 +20,22 @@ extern const float RADIANS_TO_DEGREES;
 extern float REAL_DEGREE_COEFFICIENT;
 extern uint32_t microTick;
 extern float dt_calc;
+extern MPU6050_float_t gyro_f;
 
-float boundary_inner = 0.50F;
+float boundary_inner = 1.00F;
 float boundary_outer = 1.00F;
-uint8_t step = 1U;
+uint8_t step = 0U;
 uint8_t step_remain = 0U;
 uint16_t step_max = 50U;
 uint32_t step_total = 0UL;
 uint32_t step_delay_static = 1000UL;
 uint32_t step_delay_dynamic = 5UL;
 
-uint32_t step_delay_vertical = 10000UL;
+uint32_t step_delay_vertical = 5000UL;
 uint32_t step_delay_horizontal = 2000UL;
-uint32_t step_delay_low = 10000UL;
-uint32_t step_delay_high = 10000UL;
-uint32_t step_delay = 1000UL;
+uint32_t step_delay_low = 5000UL;
+uint32_t step_delay_high = 1000000UL;
+uint32_t step_delay = 1000000UL;
 uint32_t step_delay_temp = 0UL;
 uint32_t step_delay_total = 0UL;
 
@@ -47,7 +48,7 @@ uint32_t t_to = 0UL;
 
 float alpha_former = 0.30F;
 float alpha_latter = 0.030F;
-float LIMIT_BETA = 	0.50F;
+float LIMIT_BETA = 	0.80F;
 float coefficient = 0.10F;
 
 float cos_val = 0.0F;
@@ -65,12 +66,14 @@ Robot_Drive prev_drive_flag = HALT;
 
 float VELOCITY_CONSTANT = 0.0F;
 const float ACCELERATION_OF_GRAVITY = 9.806650F;
-float ACCELERATION_OF_RISING = 0.20F;
+float ACCELERATION_OF_RISING = 0.1F;
 const float STEP_RADIAN = 0.020F;
 const float WHEEL_RADIUS = 0.0350F;
 const float WHEEL_CONSTANT = 0.00070F;
 float DEGREE_COEFFICIENT = 3.140F;
 const float AXIS_TO_SENSOR = 0.180F;
+float TIME_CONSTANT = 0.001F;
+float INERTIA_MOMENT = 1.70F;
 
 uint32_t step_delay_to = 0UL;
 float max_angular_acceleration = 0.0F;
@@ -88,6 +91,7 @@ float inertia_moment = 0.0F;
 int8_t find_flag = 0;
 
 int8_t excite_flag = 0;
+
 
 void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
 		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_)
@@ -1049,6 +1053,7 @@ void reactToAngleGyro(void)
 	}
 }
  */
+/*
 uint32_t getStepDelay(void)
 {
 	uint32_t new_delay = 0UL;
@@ -1169,13 +1174,119 @@ uint32_t getStepDelay(void)
 
 	return new_delay;
 }
+ */
+uint32_t getStepDelay(void)
+{
+	uint32_t new_delay = 0UL;
+	//	float step_delay_of_float = (float)step_delay / 1000000.0F;
+
+	if (drive_flag == HALT)
+	{
+		new_delay = step_delay_high;
+	}
+
+	else if (drive_flag == RUN)
+	{
+		new_delay = step_delay;
+	}
+
+	else if (drive_flag == READY)
+	{
+		new_delay = step_delay_high;
+	}
+
+	else if (drive_flag == ACCEL)
+	{
+		if (prev_drive_flag == HALT)
+		{
+			if (step%2 == 0U)
+			{
+				new_delay = WHEEL_CONSTANT / (((TIME_CONSTANT * ((INERTIA_MOMENT * (((fabsf(gyro_f.x) / RADIANS_TO_DEGREES) / TIME_CONSTANT) - 0.25F)) +
+						(ACCELERATION_OF_GRAVITY * sin(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_RISING)) / cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay_high));
+			}
+			else if (step%2 == 1U)
+			{
+				new_delay = WHEEL_CONSTANT / (((TIME_CONSTANT * ((INERTIA_MOMENT * (((fabsf(gyro_f.x) / RADIANS_TO_DEGREES) / TIME_CONSTANT) - 0.20F)) +
+						(ACCELERATION_OF_GRAVITY * sin(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_RISING)) / cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay_high));
+			}
+		}
+		else
+		{
+			if (((rotation_flag == FORWARD) && (gyro_f.x >= 0.0F)) || ((rotation_flag == BACKWARD) && (gyro_f.x <= 0.0F)))
+			{
+				if (step%2 == 0U)
+				{
+					new_delay = WHEEL_CONSTANT / (((TIME_CONSTANT * ((INERTIA_MOMENT * (-0.25F)) +
+							(ACCELERATION_OF_GRAVITY * sin(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))))) / cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay));
+				}
+				else if (step%2 == 1U)
+				{
+					new_delay = WHEEL_CONSTANT / (((TIME_CONSTANT * ((INERTIA_MOMENT * (-0.20F)) +
+							(ACCELERATION_OF_GRAVITY * sin(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))))) / cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay));
+				}
+			}
+			else
+			{
+				if (step%2 == 0U)
+				{
+					new_delay = WHEEL_CONSTANT / (((TIME_CONSTANT * ((INERTIA_MOMENT * (((fabsf(gyro_f.x) / RADIANS_TO_DEGREES) / TIME_CONSTANT) - 0.25F)) +
+							(ACCELERATION_OF_GRAVITY * sin(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_RISING)) / cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay));
+				}
+				else if (step%2 == 1U)
+				{
+					new_delay = WHEEL_CONSTANT / (((TIME_CONSTANT * ((INERTIA_MOMENT * (((fabsf(gyro_f.x) / RADIANS_TO_DEGREES) / TIME_CONSTANT) - 0.20F)) +
+							(ACCELERATION_OF_GRAVITY * sin(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_RISING)) / cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay));
+				}
+			}
+		}
+		if (new_delay < step_delay_low)
+			return step_delay_low;
+	}
+
+	else if (drive_flag == DECEL)
+	{
+		if (((rotation_flag == FORWARD) && (gyro_f.x <= 0.0F)) || ((rotation_flag == BACKWARD) && (gyro_f.x >= 0.0F)))
+		{
+			if (step%2 == 0U)
+			{
+				new_delay = WHEEL_CONSTANT / ((-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.25F)) +
+						(ACCELERATION_OF_GRAVITY * sin(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_RISING)) / cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay));
+			}
+			else if (step%2 == 1U)
+			{
+				new_delay = WHEEL_CONSTANT / ((-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.20F)) +
+						(ACCELERATION_OF_GRAVITY * sin(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_RISING)) / cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay));
+			}
+		}
+		else
+		{
+			if (step%2 == 0U)
+			{
+				new_delay = WHEEL_CONSTANT / ((-(TIME_CONSTANT * ((INERTIA_MOMENT * (((fabsf(gyro_f.x) / RADIANS_TO_DEGREES) / TIME_CONSTANT) + 0.25F)) +
+						(ACCELERATION_OF_GRAVITY * sin(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_RISING)) / cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay));
+			}
+			else if (step%2 == 1U)
+			{
+				new_delay = WHEEL_CONSTANT / ((-(TIME_CONSTANT * ((INERTIA_MOMENT * (((fabsf(gyro_f.x) / RADIANS_TO_DEGREES) / TIME_CONSTANT) + 0.20F)) +
+						(ACCELERATION_OF_GRAVITY * sin(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_RISING)) / cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay));
+			}
+		}
+		if (new_delay >= step_delay_high)
+		{
+			drive_flag = READY;
+			return step_delay_high;
+		}
+	}
+
+	return new_delay;
+}
 
 void adjustVelocityLimit(void)
 {
 	uint32_t step_delay_incline;
 
 	cos_val = cos(curr_filtered_angle.x / RADIANS_TO_DEGREES);
-	step_delay_incline = (uint32_t)((float)step_delay_high * fabsf(cos_val) * LIMIT_BETA);
+	step_delay_incline = (uint32_t)((float)step_delay_vertical * fabsf(cos_val) * LIMIT_BETA);
 
 	if (step_delay_incline < step_delay_horizontal)
 		step_delay_low = step_delay_horizontal;
@@ -1188,16 +1299,16 @@ void reactToAngleGyro(void)
 	//	char msg[150];
 
 	//	t_from = microTick;
-
 	if (curr_filtered_angle.x > (boundary_inner))
 		direction_flag = FRONT;
 	else if (curr_filtered_angle.x < (-boundary_inner))
 		direction_flag = REAR;
 
+	prev_drive_flag = drive_flag;
 
 	if (fabsf(curr_filtered_angle.x) <= (boundary_inner))
 	{
-		if (REAL_DEGREE_COEFFICIENT <= 0.1F)
+		if (fabsf(gyro_f.x) <= 90.0F)
 		{
 			drive_flag = HALT;
 		}

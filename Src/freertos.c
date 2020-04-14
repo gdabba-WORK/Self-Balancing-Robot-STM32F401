@@ -331,7 +331,6 @@ void StartMotorSync(void *argument)
 	osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
 	osThreadYield();
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-	//	step_reset(0UL);
 	//	prev_tick = HAL_GetTick();
 	//	prev_tick2 = HAL_GetTick();
 	/* Infinite loop */
@@ -364,8 +363,8 @@ void StartMotorSync(void *argument)
 		//			}
 		//			prev_tick = HAL_GetTick();
 		//		}
-		//		reactToAngleGyro();
-		momentFinder_only_torque();
+		reactToAngleGyro();
+//		momentFinder_only_torque();
 
 		//		if ((HAL_GetTick() - prev_tick2) >= 10000UL)
 		//		{
