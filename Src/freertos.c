@@ -54,6 +54,7 @@ extern MPU6050_float_t accel_angle;
 extern float dt_calc;
 extern int8_t print_flag;
 extern uint32_t t_prev, t_now;
+extern float boundary_inner;
 
 MPU6050_int16_t acc, gyro;
 MPU6050_int32_t diffacc = {0, 0, 0};
@@ -203,7 +204,7 @@ void StartDefaultTask(void *argument)
 			calcAccelYPR();
 			calcGyroYPR();
 			calcFilteredYPR();
-			if (fabs(curr_filtered_angle.x) <= 1.0F)
+			if (fabs(curr_filtered_angle.x) <= boundary_inner)
 			{
 				if (LD4_state == GPIO_PIN_RESET)
 				{

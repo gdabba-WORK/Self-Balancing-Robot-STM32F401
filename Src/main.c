@@ -479,7 +479,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		switch (rx_data) {
 		case 'f' :
 			sprintf(msg, "drive_flag=%s\t direction_flag=%s\t rotation_flag=%s\r\n",
-					(drive_flag == HALT) ? "HALT" : (drive_flag == READY) ? "READY" : (drive_flag == ACCEL) ? "ACCEL" : "DECEL",
+					(drive_flag == HALT) ? "HALT" : (drive_flag == READY) ? "READY" : (drive_flag == RUN) ? "RUN" :
+							(drive_flag == ACCEL) ? "ACCEL" : (drive_flag == DECEL_APPROX) ? "DECEL_APPROX" :
+									(drive_flag == DECEL_EXACT_FALL) ? "DECEL_EXACT_FALL" :	(drive_flag == DECEL_EXACT_LIE) ? "DECEL_EXACT_LIE" :
+											(drive_flag == SUDDEN_ACCEL) ? "SUDDEN_ACCEL" : "SUDDEN_DECEL",
 							(direction_flag == FRONT) ? "FRONT" : "REAR",
 									(rotation_flag == FORWARD) ? "FORWARD" : "BACKWARD");
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
@@ -533,14 +536,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			LIMIT_BETA = LIMIT_BETA + 0.010f;
 			break;
 		case '/' :
-			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.010f;
+			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.0010F;
 			break;
 		case '*' :
-			sprintf(msg, "COMPLEMENTARY_ALPHA=%.2f\r\n", COMPLEMENTARY_ALPHA);
+			sprintf(msg, "COMPLEMENTARY_ALPHA=%.3f\r\n", COMPLEMENTARY_ALPHA);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '-' :
-			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.010f;
+			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.0010F;
 			break;
 		case 't' :
 			sprintf(msg, "dt_calc=%.6f\t dt_proc=%.10f\t t_from=%lu\t t_to=%lu\r\n", dt_calc, ((float)dt_proc / 1000000.0F), t_from, t_to);
@@ -594,7 +597,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			sprintf(msg, "LIMIT_BETA=%.2f\r\n", LIMIT_BETA);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-			sprintf(msg, "COMPLEMENTARY_ALPHA=%.2f\r\n", COMPLEMENTARY_ALPHA);
+			sprintf(msg, "COMPLEMENTARY_ALPHA=%.3f\r\n", COMPLEMENTARY_ALPHA);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			sprintf(msg, "INERTIA_MOMENT=%.5f\r\n", INERTIA_MOMENT);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);

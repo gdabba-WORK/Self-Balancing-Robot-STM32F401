@@ -32,7 +32,7 @@ float accel_xz, accel_yz;
 MPU6050_float_t tmp_angle = {0.0F, 0.0F, 0.0F};
 MPU6050_float_t curr_filtered_angle = {0.0F, 0.0F, 0.0F};
 
-float COMPLEMENTARY_ALPHA = 0.990F;
+float COMPLEMENTARY_ALPHA = 0.9950F;
 float REAL_DEGREE_COEFFICIENT = 0.0F;
 
 int8_t zero_flag = 0;

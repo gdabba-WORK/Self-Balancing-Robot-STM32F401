@@ -48,7 +48,11 @@ typedef enum
 	READY			= 1U,
 	RUN				= 2U,
 	ACCEL			= 3U,
-	DECEL			= 4U
+	DECEL_APPROX	= 4U,
+	DECEL_EXACT_FALL	= 5U,
+	DECEL_EXACT_LIE	= 6U,
+	SUDDEN_ACCEL	= 7U,
+	SUDDEN_DECEL	= 8U
 } Robot_Drive;
 void HAL_Delay(uint32_t Delay);
 
@@ -97,6 +101,7 @@ void reactToAngle(void);
 
 uint32_t getStepDelay(void);
 void adjustVelocityLimit(void);
+void setFlag(void);
 void reactToAngleGyro(void);
 
 void momentFinder_with_accel_and_torque(void);
