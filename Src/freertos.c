@@ -52,6 +52,7 @@ extern float accel_xz, accel_yz;
 extern MPU6050_float_t tmp_angle;
 extern MPU6050_float_t accel_angle;
 extern float dt_calc;
+extern uint32_t dt_proc, dt_proc_max, t_from, t_to;
 extern int8_t print_flag;
 extern uint32_t t_prev, t_now;
 extern float boundary_inner;
@@ -61,6 +62,7 @@ MPU6050_int32_t diffacc = {0, 0, 0};
 MPU6050_int32_t diffgyro = {0, 0, 0};
 int16_t tmpr;
 uint32_t sync_period = 20UL;
+uint32_t DLPF_DELAY = 3000UL;
 
 int8_t init_flag = 0;
 
@@ -163,7 +165,7 @@ void StartDefaultTask(void *argument)
 	GPIO_PinState LD4_state = GPIO_PIN_RESET;
 
 	step_reset(0UL);
-	MPU6050_Init(MPU6050_DLPF_BW_42);
+	MPU6050_Init(MPU6050_DLPF_BW_98);
 	//	while (init_flag == 0)
 	//	{
 	//		osThreadYield();
@@ -191,10 +193,15 @@ void StartDefaultTask(void *argument)
 		//		sprintf(msg, "dt=%8.8f\r\n", 10.0F);
 		//		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 10UL);
 		//		if ((MY_GetTick() - prev_tick2) >= 4800UL)
-		if ((MY_GetTick() - t_prev) >= 4800UL)
+		if ((MY_GetTick() - t_prev) >= DLPF_DELAY)
 		{
+//			t_from = MY_GetTick();
+			osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
+			dt_calc = (MY_GetTick() - t_prev) / 1000000.0F;
 			MPU6050_GetData(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
-			calcDT();
+//			calcDT();
+			t_prev = MY_GetTick();
+
 			diffacc.x = (int32_t)(acc.x - accOffset.x);
 			diffacc.y = (int32_t)(acc.y - accOffset.y);
 			diffacc.z  = (int32_t)(acc.z - accOffset.z);
@@ -220,7 +227,10 @@ void StartDefaultTask(void *argument)
 					LD4_state = GPIO_PIN_RESET;
 				}
 			}
-			osThreadYield();
+//			t_to = MY_GetTick();
+//			dt_proc = t_to - t_from;
+//			if (dt_proc > dt_proc_max)
+//				dt_proc_max = dt_proc;
 		}
 		//		count++;
 		//		sprintf(msg, "status=%d\r\n", status);
@@ -330,8 +340,8 @@ void StartMotorSync(void *argument)
 	//	int8_t angle = 0;
 
 	osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
-	osThreadYield();
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+	osThreadYield();
 	//	prev_tick = HAL_GetTick();
 	//	prev_tick2 = HAL_GetTick();
 	/* Infinite loop */
@@ -364,7 +374,7 @@ void StartMotorSync(void *argument)
 		//			}
 		//			prev_tick = HAL_GetTick();
 		//		}
-		reactToAngleGyro();
+		reactToAngleGyro(defaultTaskHandle);
 //		momentFinder_only_torque();
 
 		//		if ((HAL_GetTick() - prev_tick2) >= 10000UL)

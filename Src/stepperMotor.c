@@ -22,7 +22,7 @@ extern uint32_t microTick;
 extern float dt_calc;
 extern MPU6050_float_t gyro_f;
 
-float boundary_inner = 0.50F;
+float boundary_inner = 1.00F;
 float boundary_outer = 1.00F;
 uint8_t step = 0U;
 uint8_t step_remain = 0U;
@@ -31,24 +31,26 @@ uint32_t step_total = 0UL;
 uint32_t step_delay_static = 1000UL;
 uint32_t step_delay_dynamic = 5UL;
 
-uint32_t step_delay_vertical = 10000UL;
+uint32_t step_delay_vertical = 5000UL;
 uint32_t step_delay_horizontal = 2000UL;
-uint32_t step_delay_low = 6500UL;
-uint32_t step_delay_high = 10000UL;
-uint32_t step_delay = 10000UL;
+uint32_t step_delay_low = 5000UL;
+uint32_t step_delay_high = 50000UL;
+uint32_t step_delay = 20000UL;
 uint32_t step_delay_temp = 0UL;
 uint32_t step_delay_total = 0UL;
+extern uint32_t DLPF_DELAY;
 
 uint32_t prev_step_delay = 0UL;
 
 uint32_t dt_proc = 0UL;
+uint32_t dt_proc_max = 0UL;
 uint32_t t_from = 0UL;
 uint32_t t_to = 0UL;
 
 
 float alpha_former = 0.30F;
 float alpha_latter = 0.030F;
-float LIMIT_BETA = 	1.00F;
+float LIMIT_BETA = 	0.850F;
 float coefficient = 0.10F;
 
 float cos_val = 0.0F;
@@ -66,13 +68,13 @@ Robot_Drive prev_drive_flag = HALT;
 
 float VELOCITY_CONSTANT = 0.0F;
 const float ACCELERATION_OF_GRAVITY = 9.806650F;
-float ACCELERATION_OF_RISING = 0.0F;
+float ACCELERATION_OF_RISING = 1.0F;
 const float STEP_RADIAN = 0.020F;
 const float WHEEL_RADIUS = 0.0350F;
 const float WHEEL_CONSTANT = 0.00070F;
 float DEGREE_COEFFICIENT = 3.140F;
 const float AXIS_TO_SENSOR = 0.180F;
-float TIME_CONSTANT = 0.001F;
+float TIME_CONSTANT = 0.0200F;
 float INERTIA_MOMENT = 1.60F;
 
 uint32_t step_delay_to = 0UL;
@@ -87,7 +89,6 @@ float prev_angle_A = 0.0F;
 float curr_angle_A = 0.0F;
 float dt_temp_A = 0.0F;
 float starting_angle = 0.0F;
-float inertia_moment = 0.0F;
 int8_t find_flag = 0;
 
 int8_t excite_flag = 0;
@@ -225,7 +226,7 @@ void reactToAccel(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, ui
 }
 
 // A상
-void step_A(uint32_t step_delay)
+void step_A(void)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -242,11 +243,10 @@ void step_A(uint32_t step_delay)
 		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
 	}
 	//	HAL_Delay(step_delay_dynamic);
-	MY_Delay(step_delay);
 }
 
 // B상
-void step_B(uint32_t step_delay)
+void step_B(void)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -263,11 +263,10 @@ void step_B(uint32_t step_delay)
 		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
 	}
 	//	HAL_Delay(step_delay_dynamic);
-	MY_Delay(step_delay);
 }
 
 // `A상
-void step_a(uint32_t step_delay)
+void step_a(void)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -284,11 +283,10 @@ void step_a(uint32_t step_delay)
 		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
 	}
 	//	HAL_Delay(step_delay_dynamic);
-	MY_Delay(step_delay);
 }
 
 // `B상
-void step_b(uint32_t step_delay)
+void step_b(void)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -305,11 +303,10 @@ void step_b(uint32_t step_delay)
 		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
 	}
 	//	HAL_Delay(step_delay_dynamic);
-	MY_Delay(step_delay);
 }
 
 // AB상
-void step_AB(uint32_t step_delay)
+void step_AB(void)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -326,11 +323,10 @@ void step_AB(uint32_t step_delay)
 		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
 	}
 	//	HAL_Delay(step_delay_dynamic);
-	MY_Delay(step_delay);
 }
 
 // `AB상
-void step_aB(uint32_t step_delay)
+void step_aB(void)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -347,11 +343,10 @@ void step_aB(uint32_t step_delay)
 		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
 	}
 	//	HAL_Delay(step_delay_dynamic);
-	MY_Delay(step_delay);
 }
 
 // `A`B상
-void step_ab(uint32_t step_delay)
+void step_ab(void)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -368,11 +363,10 @@ void step_ab(uint32_t step_delay)
 		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
 	}
 	//	HAL_Delay(step_delay_dynamic);
-	MY_Delay(step_delay);
 }
 
 // A`B상
-void step_Ab(uint32_t step_delay)
+void step_Ab(void)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -389,9 +383,8 @@ void step_Ab(uint32_t step_delay)
 		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
 	}
 	//	HAL_Delay(step_delay_dynamic);
-	MY_Delay(step_delay);
 }
-void step_ABa(uint32_t step_delay)
+void step_ABa(void)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -408,9 +401,8 @@ void step_ABa(uint32_t step_delay)
 		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
 	}
 	//	HAL_Delay(step_delay_dynamic);
-	MY_Delay(step_delay);
 }
-void step_Bab(uint32_t step_delay)
+void step_Bab(void)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -427,9 +419,8 @@ void step_Bab(uint32_t step_delay)
 		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
 	}
 	//	HAL_Delay(step_delay_dynamic);
-	MY_Delay(step_delay);
 }
-void step_abA(uint32_t step_delay)
+void step_abA(void)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -446,9 +437,8 @@ void step_abA(uint32_t step_delay)
 		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
 	}
 	//	HAL_Delay(step_delay_dynamic);
-	MY_Delay(step_delay);
 }
-void step_bAB(uint32_t step_delay)
+void step_bAB(void)
 {
 	if ((state_flag & LEFT_MOTOR) == LEFT_MOTOR)
 	{
@@ -465,7 +455,6 @@ void step_bAB(uint32_t step_delay)
 		HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_SET);
 	}
 	//	HAL_Delay(step_delay_dynamic);
-	MY_Delay(step_delay);
 }
 void step_reset(uint32_t step_delay)
 {
@@ -479,7 +468,6 @@ void step_reset(uint32_t step_delay)
 	HAL_GPIO_WritePin(SM2B_GPIO_Port, SM2B_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(SM2B__GPIO_Port, SM2B__Pin, GPIO_PIN_RESET);
 	//	HAL_Delay(step_delay_dynamic);
-	MY_Delay(step_delay);
 }
 
 void new_delay(uint32_t step_delay)
@@ -670,68 +658,72 @@ void new_step_Ab(uint32_t step_delay)
 	new_delay(step_delay);
 }
 
-void unipolar_parallel_sequence_onePhase(uint32_t step_delay)
+void unipolar_parallel_sequence_onePhase(uint32_t step_delay, osThreadId_t handle)
 {
 	switch (step%4U) {
 	case 0U :
-		step_A(step_delay); break;
+		step_A(); break;
 	case 1U :
-		step_B(step_delay); break;
+		step_B(); break;
 	case 2U :
-		step_a(step_delay); break;
+		step_a(); break;
 	case 3U :
-		step_b(step_delay); break;
+		step_b(); break;
 	}
+	MY_Delay(step_delay, handle);
 }
 
-void unipolar_parallel_sequence_twoPhase(uint32_t step_delay)
+void unipolar_parallel_sequence_twoPhase(uint32_t step_delay, osThreadId_t handle)
 {
 	switch (step%4) {
 	case 0U :
-		step_AB(step_delay); break;
+		step_AB(); break;
 	case 1U :
-		step_aB(step_delay); break;
+		step_aB(); break;
 	case 2U :
-		step_ab(step_delay); break;
+		step_ab(); break;
 	case 3U :
-		step_Ab(step_delay); break;
+		step_Ab(); break;
 	}
+	MY_Delay(step_delay, handle);
 }
 
-void unipolar_parallel_sequence_onetwoPhase(uint32_t step_delay)
+void unipolar_parallel_sequence_onetwoPhase(uint32_t step_delay, osThreadId_t handle)
 {
 	switch (step%8) {
 	case 0U :
-		step_A(step_delay); break;
+		step_A(); break;
 	case 1U :
-		step_AB(step_delay); break;
+		step_AB(); break;
 	case 2U :
-		step_B(step_delay); break;
+		step_B(); break;
 	case 3U :
-		step_aB(step_delay); break;
+		step_aB(); break;
 	case 4U :
-		step_a(step_delay); break;
+		step_a(); break;
 	case 5U :
-		step_ab(step_delay); break;
+		step_ab(); break;
 	case 6U :
-		step_b(step_delay); break;
+		step_b(); break;
 	case 7U :
-		step_Ab(step_delay); break;
+		step_Ab(); break;
 	}
+	MY_Delay(step_delay, handle);
 }
 
-void unipolar_parallel_sequence_threePhase(uint32_t step_delay)
+void unipolar_parallel_sequence_threePhase(uint32_t step_delay, osThreadId_t handle)
 {
 	switch (step%4) {
 	case 0U :
-		step_ABa(step_delay); break;
+		step_ABa(); break;
 	case 1U :
-		step_Bab(step_delay); break;
+		step_Bab(); break;
 	case 2U :
-		step_abA(step_delay); break;
+		step_abA(); break;
 	case 3U :
-		step_bAB(step_delay); break;
+		step_bAB(); break;
 	}
+	MY_Delay(step_delay, handle);
 }
 
 void new_unipolar_parallel_sequence_onetwoPhase(uint32_t step_delay)
@@ -1180,6 +1172,7 @@ uint32_t getStepDelay(void)
 	uint32_t new_delay = 0UL;
 	float step_delay_float = (float)step_delay / 1000000.0F;
 	float temp_float = 0.000000F;
+	TIME_CONSTANT = step_delay_float;
 
 	if (drive_flag == HALT)
 	{
@@ -1235,9 +1228,9 @@ uint32_t getStepDelay(void)
 		}
 
 		if (new_delay < step_delay_low)
-			return step_delay_low;
+			new_delay = step_delay_low;
 		else if (new_delay > step_delay_high)
-			return step_delay_high;
+			new_delay = step_delay_high;
 		//		}
 		//		else
 		//		{
@@ -1278,8 +1271,8 @@ uint32_t getStepDelay(void)
 					cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay_float));
 			if (temp_float > 0.000000F)
 				new_delay = (WHEEL_CONSTANT / temp_float) * 1000000.0F;
-			else
-				new_delay = step_delay_high;
+			//			else
+			//				new_delay = step_delay_high;
 		}
 		else if (step%2 == 1U)
 		{
@@ -1287,12 +1280,13 @@ uint32_t getStepDelay(void)
 					cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay_float));
 			if (temp_float > 0.000000F)
 				new_delay = (WHEEL_CONSTANT / temp_float) * 1000000.0F;
-			else
-				new_delay = step_delay_high;
+			//			else
+			//				new_delay = step_delay_high;
 		}
-		if (new_delay > step_delay_high)
+		if ((new_delay > step_delay_high) || (new_delay == 0UL))
 		{
-			return step_delay_high;
+			drive_flag = HALT;
+			new_delay = step_delay_high;
 		}
 	}
 	else if (drive_flag == DECEL_EXACT_LIE)
@@ -1303,8 +1297,8 @@ uint32_t getStepDelay(void)
 					cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay_float));
 			if (temp_float > 0.000000F)
 				new_delay = (WHEEL_CONSTANT / temp_float) * 1000000.0F;
-			else
-				new_delay = step_delay_high;
+			//			else
+			//				new_delay = step_delay_high;
 		}
 		else if (step%2 == 1U)
 		{
@@ -1312,12 +1306,13 @@ uint32_t getStepDelay(void)
 					cos(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay_float));
 			if (temp_float > 0.000000F)
 				new_delay = (WHEEL_CONSTANT / temp_float) * 1000000.0F;
-			else
-				new_delay = step_delay_high;
+			//			else
+			//				new_delay = step_delay_high;
 		}
-		if (new_delay > step_delay_high)
+		if ((new_delay > step_delay_high) || (new_delay == 0UL))
 		{
-			return step_delay_high;
+			drive_flag = HALT;
+			new_delay = step_delay_high;
 		}
 	}
 	else if (drive_flag == DECEL_APPROX)
@@ -1327,20 +1322,21 @@ uint32_t getStepDelay(void)
 			temp_float = (-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.250000F)) + ACCELERATION_OF_RISING)) + (WHEEL_CONSTANT / step_delay_float));
 			if (temp_float > 0.000000F)
 				new_delay = (WHEEL_CONSTANT / temp_float) * 1000000.0F;
-			else
-				new_delay = step_delay_high;
+			//			else
+			//				new_delay = step_delay_high;
 		}
 		else if (step%2 == 1U)
 		{
 			temp_float = (-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.200000F)) + ACCELERATION_OF_RISING)) + (WHEEL_CONSTANT / step_delay_float));
 			if (temp_float > 0.000000F)
 				new_delay = (WHEEL_CONSTANT / temp_float) * 1000000.0F;
-			else
-				new_delay = step_delay_high;
+			//			else
+			//				new_delay = step_delay_high;
 		}
-		if (new_delay > step_delay_high)
+		if ((new_delay > step_delay_high) || (new_delay == 0UL))
 		{
-			return step_delay_high;
+			drive_flag = HALT;
+			new_delay = step_delay_high;
 		}
 	}
 	else if (drive_flag == SUDDEN_ACCEL)
@@ -1357,8 +1353,8 @@ uint32_t getStepDelay(void)
 
 			if (temp_float > 0.000000F)
 				new_delay = (WHEEL_CONSTANT / temp_float) * 1000000.0F;
-			else
-				new_delay = step_delay_high;
+			//			else
+			//				new_delay = step_delay_high;
 		}
 		else if (step%2 == 1U)
 		{
@@ -1367,12 +1363,13 @@ uint32_t getStepDelay(void)
 
 			if (temp_float > 0.000000F)
 				new_delay = (WHEEL_CONSTANT / temp_float) * 1000000.0F;
-			else
-				new_delay = step_delay_high;
+			//			else
+			//				new_delay = step_delay_high;
 		}
-		if (new_delay > step_delay_high)
+		if ((new_delay > step_delay_high) || (new_delay == 0UL))
 		{
-			return step_delay_high;
+			drive_flag = HALT;
+			new_delay = step_delay_high;
 		}
 	}
 
@@ -1386,8 +1383,8 @@ void adjustVelocityLimit(void)
 	cos_val = cos(curr_filtered_angle.x / RADIANS_TO_DEGREES);
 	step_delay_incline = (uint32_t)((float)step_delay_vertical * fabsf(cos_val) * LIMIT_BETA);
 
-	if (step_delay_incline < step_delay_horizontal)
-		step_delay_low = step_delay_horizontal;
+	if (step_delay_incline < (DLPF_DELAY + 500UL))
+		step_delay_low = (DLPF_DELAY + 500UL);
 	else
 		step_delay_low = step_delay_incline;
 }
@@ -1434,29 +1431,33 @@ void setFlag(void)
 		{
 			if (((direction_flag == FRONT) && ((-gyro_f.x) >= 0.000000F)) || ((direction_flag == REAR) && ((-gyro_f.x) < 0.000000F)))
 			{
-				if (step%2 == 0U)
-				{
-//					if (ACCELERATION_OF_GRAVITY * fabsf(sin(curr_filtered_angle.x / RADIANS_TO_DEGREES)) > (INERTIA_MOMENT * 0.25F))
-//					{
-//						drive_flag = SUDDEN_ACCEL;
-//					}
-//					else
-//					{
-						drive_flag = ACCEL;
-//					}
-				}
+				//				if (step%2 == 0U)
+				//				{
+				//					if (ACCELERATION_OF_GRAVITY * fabsf(sin(curr_filtered_angle.x / RADIANS_TO_DEGREES)) > (INERTIA_MOMENT * 0.25F))
+				//					{
+				//						drive_flag = SUDDEN_ACCEL;
+				//					}
+				//					else
+				//					{
+				//						drive_flag = ACCEL;
+				//					}
+				//				}
 
-				else if (step%2 == 1U)
-				{
-//					if (ACCELERATION_OF_GRAVITY * fabsf(sin(curr_filtered_angle.x / RADIANS_TO_DEGREES)) > (INERTIA_MOMENT * 0.20F))
-//					{
-//						drive_flag = SUDDEN_ACCEL;
-//					}
-//					else
-//					{
-						drive_flag = ACCEL;
-//					}
-				}
+				//				else if (step%2 == 1U)
+				//				{
+				//					if (ACCELERATION_OF_GRAVITY * fabsf(sin(curr_filtered_angle.x / RADIANS_TO_DEGREES)) > (INERTIA_MOMENT * 0.20F))
+				//					{
+				//						drive_flag = SUDDEN_ACCEL;
+				//					}
+				//					else
+				//					{
+				//						drive_flag = ACCEL;
+				//					}
+				//				}
+				if (prev_drive_flag == ACCEL)
+					drive_flag = SUDDEN_ACCEL;
+				else
+					drive_flag = ACCEL;
 			}
 			else
 			{
@@ -1498,7 +1499,7 @@ void setFlag(void)
 		}
 	}
 }
-void reactToAngleGyro(void)
+void reactToAngleGyro(osThreadId_t handle)
 {
 	//	char msg[150];
 
@@ -1516,7 +1517,7 @@ void reactToAngleGyro(void)
 	//	}
 
 	setFlag();
-//	adjustVelocityLimit();
+	adjustVelocityLimit();
 	step_delay = getStepDelay();
 
 	//	if ((prev_drive_flag == HALT) && (drive_flag != HALT))
@@ -1548,7 +1549,7 @@ void reactToAngleGyro(void)
 
 	if (drive_flag == HALT)
 	{
-		unipolar_parallel_sequence_onetwoPhase(0UL);
+		unipolar_parallel_sequence_onetwoPhase(DLPF_DELAY, handle);
 	}
 	else
 	{
@@ -1556,7 +1557,7 @@ void reactToAngleGyro(void)
 			step++;
 		else if (rotation_flag == BACKWARD)
 			step--;
-		unipolar_parallel_sequence_onetwoPhase(step_delay);
+		unipolar_parallel_sequence_onetwoPhase(step_delay, handle);
 		//		if (print_flag)
 		//		{
 		//			sprintf(msg, "%-10s\tf=%7.3f\ta=%7.3f\tg=%7.3f\ts=%7.3f\tstep_delay=%ld\r\n",
@@ -1565,7 +1566,7 @@ void reactToAngleGyro(void)
 		//		}
 	}
 }
-
+/*
 void momentFinder_with_accel_and_torque(void)
 {
 	char msg[150];
@@ -1755,3 +1756,4 @@ void momentFinder_only_torque(void)
 		step_reset(1000000UL);
 	}
 }
+ */

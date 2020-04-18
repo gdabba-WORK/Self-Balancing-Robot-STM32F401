@@ -44,6 +44,7 @@ extern "C" {
 #include "usart.h"
 #include "i2c.h"
 #include "cmsis_os.h"
+#include "cmsis_os2.h"
 
 /* USER CODE END Includes */
 
@@ -118,7 +119,7 @@ void Error_Handler(void);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void HAL_Delay(uint32_t Delay);
 uint32_t MY_GetTick();
-void MY_Delay(uint32_t step_delay);
+void MY_Delay(uint32_t step_delay, osThreadId_t);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

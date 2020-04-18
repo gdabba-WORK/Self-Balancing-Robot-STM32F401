@@ -12,6 +12,7 @@
 #endif
 
 #include "main.h"
+#include "cmsis_os2.h"
 
 typedef enum
 {
@@ -67,14 +68,14 @@ void bigStepper_slower(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA
 void reactToAccel(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
 		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_);
 
-void step_A(uint32_t step_delay);
-void step_B(uint32_t step_delay);
-void step_a(uint32_t step_delay);
-void step_b(uint32_t step_delay);
-void step_AB(uint32_t step_delay);
-void step_aB(uint32_t step_delay);
-void step_ab(uint32_t step_delay);
-void step_Ab(uint32_t step_delay);
+void step_A(void);
+void step_B(void);
+void step_a(void);
+void step_b(void);
+void step_AB(void);
+void step_aB(void);
+void step_ab(void);
+void step_Ab(void);
 void new_step_A(uint32_t step_delay);
 void new_step_B(uint32_t step_delay);
 void new_step_a(uint32_t step_delay);
@@ -83,16 +84,16 @@ void new_step_AB(uint32_t step_delay);
 void new_step_aB(uint32_t step_delay);
 void new_step_ab(uint32_t step_delay);
 void new_step_Ab(uint32_t step_delay);
-void step_ABa(uint32_t step_delay);
-void step_Bab(uint32_t step_delay);
-void step_abA(uint32_t step_delay);
-void step_bAB(uint32_t step_delay);
+void step_ABa(void);
+void step_Bab(void);
+void step_abA(void);
+void step_bAB(void);
 void step_reset(uint32_t step_delay);
 
-void unipolar_parallel_sequence_onePhase(uint32_t step_delay);
-void unipolar_parallel_sequence_twoPhase(uint32_t step_delay);
-void unipolar_parallel_sequence_onetwoPhase(uint32_t step_delay);
-void unipolar_parallel_sequence_threePhase(uint32_t step_delay);
+void unipolar_parallel_sequence_onePhase(uint32_t step_delay, osThreadId_t handle);
+void unipolar_parallel_sequence_twoPhase(uint32_t step_delay, osThreadId_t handle);
+void unipolar_parallel_sequence_onetwoPhase(uint32_t step_delay, osThreadId_t handle);
+void unipolar_parallel_sequence_threePhase(uint32_t step_delay, osThreadId_t handle);
 void new_unipolar_parallel_sequence_onetwoPhase(uint32_t step_delay);
 
 //void reactToAccel_parallel(int8_t* angle);
@@ -102,7 +103,7 @@ void reactToAngle(void);
 uint32_t getStepDelay(void);
 void adjustVelocityLimit(void);
 void setFlag(void);
-void reactToAngleGyro(void);
+void reactToAngleGyro(osThreadId_t handle);
 
 void momentFinder_with_accel_and_torque(void);
 void momentFinder_only_torque(void);

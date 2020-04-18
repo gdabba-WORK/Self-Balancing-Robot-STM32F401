@@ -80,7 +80,8 @@ extern Robot_Drive drive_flag;
 extern float VELOCITY_CONSTANT;
 extern float DEGREE_COEFFICIENT;
 extern float REAL_DEGREE_COEFFICIENT;
-extern uint32_t dt_proc, t_from, t_to;
+extern float TIME_CONSTANT;
+extern uint32_t dt_proc, dt_proc_max, t_from, t_to;
 extern int8_t zero_flag;
 extern int8_t find_flag;
 extern float angular_acceleration;
@@ -90,6 +91,7 @@ extern int8_t excite_flag;
 extern uint8_t step_remain;
 extern uint8_t step;
 extern float INERTIA_MOMENT;
+extern uint32_t DLPF_DELAY;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -483,8 +485,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 							(drive_flag == ACCEL) ? "ACCEL" : (drive_flag == DECEL_APPROX) ? "DECEL_APPROX" :
 									(drive_flag == DECEL_EXACT_FALL) ? "DECEL_EXACT_FALL" :	(drive_flag == DECEL_EXACT_LIE) ? "DECEL_EXACT_LIE" :
 											(drive_flag == SUDDEN_ACCEL) ? "SUDDEN_ACCEL" : "SUDDEN_DECEL",
-							(direction_flag == FRONT) ? "FRONT" : "REAR",
-									(rotation_flag == FORWARD) ? "FORWARD" : "BACKWARD");
+													(direction_flag == FRONT) ? "FRONT" : "REAR",
+															(rotation_flag == FORWARD) ? "FORWARD" : "BACKWARD");
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case 's' :
@@ -506,7 +508,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '1' :
-			INERTIA_MOMENT = INERTIA_MOMENT- 0.010f;
+			INERTIA_MOMENT = INERTIA_MOMENT - 0.010f;
 			break;
 		case '2' :
 			sprintf(msg, "INERTIA_MOMENT=%.5f\r\n", INERTIA_MOMENT);
@@ -514,6 +516,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			break;
 		case '3' :
 			INERTIA_MOMENT = INERTIA_MOMENT + 0.010f;
+			break;
+		case 'v' :
+			TIME_CONSTANT = TIME_CONSTANT - 0.0001f;
+			break;
+		case 'b' :
+			sprintf(msg, "TIME_CONSTANT=%.5f\r\n", TIME_CONSTANT);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
+		case 'n' :
+			TIME_CONSTANT = TIME_CONSTANT + 0.0001f;
 			break;
 		case '4' :
 			ACCELERATION_OF_RISING = ACCELERATION_OF_RISING - 0.010F;
@@ -536,17 +548,17 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			LIMIT_BETA = LIMIT_BETA + 0.010f;
 			break;
 		case '/' :
-			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.0010F;
+			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.00010F;
 			break;
 		case '*' :
-			sprintf(msg, "COMPLEMENTARY_ALPHA=%.3f\r\n", COMPLEMENTARY_ALPHA);
+			sprintf(msg, "COMPLEMENTARY_ALPHA=%.4f\r\n", COMPLEMENTARY_ALPHA);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '-' :
-			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.0010F;
+			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.00010F;
 			break;
 		case 't' :
-			sprintf(msg, "dt_calc=%.6f\t dt_proc=%.10f\t t_from=%lu\t t_to=%lu\r\n", dt_calc, ((float)dt_proc / 1000000.0F), t_from, t_to);
+			sprintf(msg, "dt_calc=%.6f\t dt_proc_max=%.10f\t dt_proc=%.10f\t t_from=%lu\t t_to=%lu\r\n", dt_calc, ((float)dt_proc_max / 1000000.0F), ((float)dt_proc / 1000000.0F), t_from, t_to);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case 'o' :
@@ -597,9 +609,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			sprintf(msg, "LIMIT_BETA=%.2f\r\n", LIMIT_BETA);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-			sprintf(msg, "COMPLEMENTARY_ALPHA=%.3f\r\n", COMPLEMENTARY_ALPHA);
+			sprintf(msg, "COMPLEMENTARY_ALPHA=%.4f\r\n", COMPLEMENTARY_ALPHA);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			sprintf(msg, "INERTIA_MOMENT=%.5f\r\n", INERTIA_MOMENT);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "TIME_CONSTANT=%.5f\r\n", TIME_CONSTANT);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 
 			sprintf(msg, "gyroOffset=%10d\t%10d\t%10d\r\n", gyroOffset.x, gyroOffset.y, gyroOffset.z);
@@ -667,14 +681,26 @@ uint32_t MY_GetTick()
 	return microTick;
 }
 
-void MY_Delay(uint32_t step_delay)
+void MY_Delay(uint32_t step_delay, osThreadId_t handle)
 {
 	uint32_t start_tick = MY_GetTick();
+	int8_t isWake = 0;
 
 	while ((MY_GetTick() - start_tick) < step_delay)
 	{
+		if (isWake == 0)
+		{
+			if ((MY_GetTick() - start_tick) >= DLPF_DELAY)
+			{
+				osThreadFlagsSet(handle, 0x0001U);
+				isWake = 1;
+			}
+		}
 		osThreadYield();
 	}
+
+	if (isWake == 0)
+		osThreadFlagsSet(handle, 0x0001U);
 }
 /* USER CODE END 4 */
 

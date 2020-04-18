@@ -15,6 +15,7 @@ extern const float AXIS_TO_SENSOR;
 extern float ACCELERATION_OF_GRAVITY;
 const float RADIANS_TO_DEGREES = 180.0F / 3.141590F;
 const float GYROXYZ_TO_DEGREES_PER_SEC = 131.0F;
+extern uint32_t DLPF_DELAY;
 
 uint32_t t_prev = 0;
 uint32_t t_now = 0;
@@ -50,7 +51,8 @@ void calcDT(void)
 {
 	//	char msg[50];
 	t_now = MY_GetTick();
-	dt_calc = (float)(t_now - t_prev) / 1000000.0F;
+//	dt_calc = (float)(t_now - t_prev) / 1000000.0F;
+	dt_calc = DLPF_DELAY / 1000000.0F;
 	//	if (print_flag)
 	//	{
 	//		sprintf(msg, "t_now= %lu\r\n", t_now);
@@ -105,7 +107,7 @@ void calcFilteredYPR()
 
 
 	prev_filtered_angle_x = curr_filtered_angle.x;
-	curr_filtered_angle.x = (COMPLEMENTARY_ALPHA * tmp_angle.x) + ((1.0F-COMPLEMENTARY_ALPHA) * accel_angle.x);
+	curr_filtered_angle.x = (COMPLEMENTARY_ALPHA * tmp_angle.x) + ((1.0000F-COMPLEMENTARY_ALPHA) * accel_angle.x);
 	//	filtered_angle.y = (ALPHA * tmp_angle.y) + ((1.0F-ALPHA) * accel_angle.y);
 	//	filtered_angle.z = tmp_angle.z;
 
