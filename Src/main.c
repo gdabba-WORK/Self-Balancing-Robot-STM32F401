@@ -73,6 +73,9 @@ int8_t print_flag = 0;
 extern float COMPLEMENTARY_ALPHA;
 extern MPU6050_float_t curr_filtered_angle;
 extern float prev_filtered_angle_x;
+extern float angular_accel_angle;
+extern MPU6050_float_t tmp_angle;
+extern MPU6050_float_t accel_angle;
 extern float cos_val;
 extern MPU6050_int16_t accOffset, gyroOffset;
 extern float ACCELERATION_OF_RISING;
@@ -500,7 +503,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			step_delay_high = step_delay_high + 100UL;
 			break;
 		case ' ' :
-			sprintf(msg, "angle=%5.2f\t prev_angle=%5.2f\r\n", curr_filtered_angle.x, prev_filtered_angle_x);
+			sprintf(msg, "prev_angle=%5.2f\t curr_angle=%5.2f\t angular_accel_angle=%5.2f\t tmp_angle=%5.2f\t accel_angle=%5.2f\r\n", prev_filtered_angle_x, curr_filtered_angle.x, angular_accel_angle, tmp_angle.x, accel_angle.x);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '+' :
@@ -549,6 +552,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			break;
 		case '/' :
 			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.00010F;
+//			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.10F;
 			break;
 		case '*' :
 			sprintf(msg, "COMPLEMENTARY_ALPHA=%.4f\r\n", COMPLEMENTARY_ALPHA);
@@ -556,6 +560,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			break;
 		case '-' :
 			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.00010F;
+//			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.10F;
 			break;
 		case 't' :
 			sprintf(msg, "dt_calc=%.6f\t dt_proc_max=%.10f\t dt_proc=%.10f\t t_from=%lu\t t_to=%lu\r\n", dt_calc, ((float)dt_proc_max / 1000000.0F), ((float)dt_proc / 1000000.0F), t_from, t_to);

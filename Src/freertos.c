@@ -170,13 +170,13 @@ void StartDefaultTask(void *argument)
 	//	{
 	//		osThreadYield();
 	//	}
-//	MPU6050_InitOffset(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
-	accOffset.x = 1561;
-	accOffset.y = 1476;
-	accOffset.z = -14696;
-	gyroOffset.x = 4;
-	gyroOffset.y = 42;
-	gyroOffset.z = 3;
+	//	MPU6050_InitOffset(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
+	accOffset.x = 918;
+	accOffset.y = 1369;
+	accOffset.z = -14872;
+	gyroOffset.x = -20;
+	gyroOffset.y = 35;
+	gyroOffset.z = -24;
 
 	//	sprintf(msg, "%d,%d,%d,%d,%d,%d\r\n", accOffset.x, accOffset.y, accOffset.z, gyroOffset.x, gyroOffset.y, gyroOffset.z);
 	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
@@ -195,11 +195,11 @@ void StartDefaultTask(void *argument)
 		//		if ((MY_GetTick() - prev_tick2) >= 4800UL)
 		if ((MY_GetTick() - t_prev) >= DLPF_DELAY)
 		{
-//			t_from = MY_GetTick();
+			//			t_from = MY_GetTick();
 			osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
 			dt_calc = (MY_GetTick() - t_prev) / 1000000.0F;
 			MPU6050_GetData(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
-//			calcDT();
+			//			calcDT();
 			t_prev = MY_GetTick();
 
 			diffacc.x = (int32_t)(acc.x - accOffset.x);
@@ -210,6 +210,7 @@ void StartDefaultTask(void *argument)
 			diffgyro.z = (int32_t)(gyro.z - gyroOffset.z);
 			calcAccelYPR();
 			calcGyroYPR();
+			calcAngularAccelYPR();
 			calcFilteredYPR();
 			if (fabs(curr_filtered_angle.x) <= boundary_inner)
 			{
@@ -227,10 +228,10 @@ void StartDefaultTask(void *argument)
 					LD4_state = GPIO_PIN_RESET;
 				}
 			}
-//			t_to = MY_GetTick();
-//			dt_proc = t_to - t_from;
-//			if (dt_proc > dt_proc_max)
-//				dt_proc_max = dt_proc;
+			//			t_to = MY_GetTick();
+			//			dt_proc = t_to - t_from;
+			//			if (dt_proc > dt_proc_max)
+			//				dt_proc_max = dt_proc;
 		}
 		//		count++;
 		//		sprintf(msg, "status=%d\r\n", status);
@@ -375,7 +376,7 @@ void StartMotorSync(void *argument)
 		//			prev_tick = HAL_GetTick();
 		//		}
 		reactToAngleGyro(defaultTaskHandle);
-//		momentFinder_only_torque();
+		//		momentFinder_only_torque();
 
 		//		if ((HAL_GetTick() - prev_tick2) >= 10000UL)
 		//		{

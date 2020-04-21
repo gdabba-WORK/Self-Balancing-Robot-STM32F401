@@ -27,6 +27,7 @@ void calcGyroYPR(void);
 
 void calcFilteredYPR();
 
+void calcAngularAccelYPR();
 #endif /* INC_COMPLEMENTARY_FILTER_H_ */
 
 

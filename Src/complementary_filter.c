@@ -22,6 +22,7 @@ uint32_t t_now = 0;
 float dt_calc = 0.0F;
 int8_t angle = 0;
 float prev_filtered_angle_x = 0.0F;
+float angular_accel_angle = 0.0F;
 
 MPU6050_float_t accel_f = {0.0F, 0.0F, 0.0F};
 MPU6050_float_t accel_angle = {0.0F, 0.0F, 0.0F};
@@ -34,6 +35,7 @@ MPU6050_float_t tmp_angle = {0.0F, 0.0F, 0.0F};
 MPU6050_float_t curr_filtered_angle = {0.0F, 0.0F, 0.0F};
 
 float COMPLEMENTARY_ALPHA = 0.9950F;
+//float COMPLEMENTARY_ALPHA = 1.00F;
 float REAL_DEGREE_COEFFICIENT = 0.0F;
 
 int8_t zero_flag = 0;
@@ -77,12 +79,12 @@ void calcAccelYPR(void)
 	//	accel_yz = (float)sqrt(pow(accel.y, 2) + pow(accel.z, 2));
 	//	accel_angle.y = (float)atan(-accel.x / accel_yz) * RADIANS_TO_DEGREES;
 
-	accel_xz = (float)sqrt(pow(accel_f.x, 2) + pow(accel_f.z, 2));
-	accel_angle.x = (float)atan(accel_f.y / accel_xz) * RADIANS_TO_DEGREES;
+	accel_xz = (float)sqrtf(pow(accel_f.x, 2) + pow(accel_f.z, 2));
+	accel_angle.x = (float)atanf(accel_f.y / accel_xz) * RADIANS_TO_DEGREES;
 
 	//	accel_angle.z = 0;
 
-	accelero_acceleration = accel_f.y * ACCELERATION_OF_GRAVITY;
+	accelero_acceleration = accel_f.y;
 }
 
 void calcGyroYPR(void)
@@ -107,7 +109,8 @@ void calcFilteredYPR()
 
 
 	prev_filtered_angle_x = curr_filtered_angle.x;
-	curr_filtered_angle.x = (COMPLEMENTARY_ALPHA * tmp_angle.x) + ((1.0000F-COMPLEMENTARY_ALPHA) * accel_angle.x);
+//	curr_filtered_angle.x = (COMPLEMENTARY_ALPHA * tmp_angle.x) + ((1.0000F-COMPLEMENTARY_ALPHA) * accel_angle.x);
+	curr_filtered_angle.x = (COMPLEMENTARY_ALPHA * tmp_angle.x) + ((1.0000F-COMPLEMENTARY_ALPHA) * angular_accel_angle);
 	//	filtered_angle.y = (ALPHA * tmp_angle.y) + ((1.0F-ALPHA) * accel_angle.y);
 	//	filtered_angle.z = tmp_angle.z;
 
@@ -117,4 +120,15 @@ void calcFilteredYPR()
 	//		zero_flag = 1;
 
 
+}
+
+void calcAngularAccelYPR()
+{
+	float asin_parameter = accelero_acceleration - (angular_acceleration * AXIS_TO_SENSOR / ACCELERATION_OF_GRAVITY);
+	if (asin_parameter > 1.0F)
+		asin_parameter = 1.0F;
+	else if (asin_parameter < -1.0F)
+		asin_parameter = -1.0F;
+
+	angular_accel_angle = asinf(asin_parameter) * RADIANS_TO_DEGREES;
 }
