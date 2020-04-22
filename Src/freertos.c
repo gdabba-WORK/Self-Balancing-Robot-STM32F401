@@ -197,10 +197,10 @@ void StartDefaultTask(void *argument)
 		{
 			//			t_from = MY_GetTick();
 			osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
-			dt_calc = (MY_GetTick() - t_prev) / 1000000.0F;
+//			dt_calc = (MY_GetTick() - t_prev) / 1000000.0F;
 			MPU6050_GetData(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
-			//			calcDT();
-			t_prev = MY_GetTick();
+			calcDT();
+//			t_prev = MY_GetTick();
 
 			diffacc.x = (int32_t)(acc.x - accOffset.x);
 			diffacc.y = (int32_t)(acc.y - accOffset.y);

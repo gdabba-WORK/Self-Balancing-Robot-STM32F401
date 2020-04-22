@@ -79,6 +79,8 @@ extern MPU6050_float_t accel_angle;
 extern float cos_val;
 extern MPU6050_int16_t accOffset, gyroOffset;
 extern float ACCELERATION_OF_RISING;
+extern float ACCELERATION_OF_STOPPING;
+extern float ACCELERATION_OF_HALTING;
 extern Robot_Drive drive_flag;
 extern float VELOCITY_CONSTANT;
 extern float DEGREE_COEFFICIENT;
@@ -510,14 +512,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			sprintf(msg, "VELOCITY_CONSTANT=%.4f\r\n", VELOCITY_CONSTANT);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
-		case '1' :
+		case 'h' :
 			INERTIA_MOMENT = INERTIA_MOMENT - 0.010f;
 			break;
-		case '2' :
+		case 'j' :
 			sprintf(msg, "INERTIA_MOMENT=%.5f\r\n", INERTIA_MOMENT);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
-		case '3' :
+		case 'k' :
 			INERTIA_MOMENT = INERTIA_MOMENT + 0.010f;
 			break;
 		case 'v' :
@@ -530,6 +532,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		case 'n' :
 			TIME_CONSTANT = TIME_CONSTANT + 0.0001f;
 			break;
+		case '1' :
+			ACCELERATION_OF_HALTING = ACCELERATION_OF_HALTING - 0.010F;
+			break;
+		case '2' :
+			sprintf(msg, "ACCELERATION_OF_HALTING=%.2f\r\n", ACCELERATION_OF_HALTING);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
+		case '3' :
+			ACCELERATION_OF_HALTING = ACCELERATION_OF_HALTING + 0.010F;
+			break;
 		case '4' :
 			ACCELERATION_OF_RISING = ACCELERATION_OF_RISING - 0.010F;
 			break;
@@ -541,26 +553,36 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			ACCELERATION_OF_RISING = ACCELERATION_OF_RISING + 0.010F;
 			break;
 		case '7' :
-			LIMIT_BETA = LIMIT_BETA - 0.010f;
+			ACCELERATION_OF_STOPPING= ACCELERATION_OF_STOPPING- 0.010F;
 			break;
 		case '8' :
-			sprintf(msg, "LIMIT_BETA=%.2f\r\n", LIMIT_BETA);
+			sprintf(msg, "ACCELERATION_OF_STOPPING=%.2f\r\n", ACCELERATION_OF_STOPPING);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '9' :
+			ACCELERATION_OF_STOPPING= ACCELERATION_OF_STOPPING+ 0.010F;
+			break;
+		case 'l' :
+			LIMIT_BETA = LIMIT_BETA - 0.010f;
+			break;
+		case ';' :
+			sprintf(msg, "LIMIT_BETA=%.2f\r\n", LIMIT_BETA);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
+		case '\'' :
 			LIMIT_BETA = LIMIT_BETA + 0.010f;
 			break;
 		case '/' :
-			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.00010F;
-//			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.10F;
+//			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.00010F;
+						COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.10F;
 			break;
 		case '*' :
 			sprintf(msg, "COMPLEMENTARY_ALPHA=%.4f\r\n", COMPLEMENTARY_ALPHA);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '-' :
-			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.00010F;
-//			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.10F;
+//			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.00010F;
+						COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.10F;
 			break;
 		case 't' :
 			sprintf(msg, "dt_calc=%.6f\t dt_proc_max=%.10f\t dt_proc=%.10f\t t_from=%lu\t t_to=%lu\r\n", dt_calc, ((float)dt_proc_max / 1000000.0F), ((float)dt_proc / 1000000.0F), t_from, t_to);
@@ -611,6 +633,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			sprintf(msg, "DEGREE_COEFFICIENT=%.2f\r\n", DEGREE_COEFFICIENT);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			sprintf(msg, "ACCELERATION_OF_RISING=%.2f\r\n", ACCELERATION_OF_RISING);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "ACCELERATION_OF_STOPPING=%.2f\r\n", ACCELERATION_OF_STOPPING);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			sprintf(msg, "ACCELERATION_OF_HALTING=%.2f\r\n", ACCELERATION_OF_HALTING);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			sprintf(msg, "LIMIT_BETA=%.2f\r\n", LIMIT_BETA);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);

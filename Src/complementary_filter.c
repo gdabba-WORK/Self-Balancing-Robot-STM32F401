@@ -12,6 +12,7 @@ extern MPU6050_int32_t diffgyro;
 extern uint32_t microTick;
 extern int8_t print_flag;
 extern const float AXIS_TO_SENSOR;
+extern const float FLOOR_TO_SENSOR;
 extern float ACCELERATION_OF_GRAVITY;
 const float RADIANS_TO_DEGREES = 180.0F / 3.141590F;
 const float GYROXYZ_TO_DEGREES_PER_SEC = 131.0F;
@@ -34,7 +35,7 @@ float accel_xz, accel_yz;
 MPU6050_float_t tmp_angle = {0.0F, 0.0F, 0.0F};
 MPU6050_float_t curr_filtered_angle = {0.0F, 0.0F, 0.0F};
 
-float COMPLEMENTARY_ALPHA = 0.9950F;
+float COMPLEMENTARY_ALPHA = 0.50F;
 //float COMPLEMENTARY_ALPHA = 1.00F;
 float REAL_DEGREE_COEFFICIENT = 0.0F;
 
@@ -53,8 +54,8 @@ void calcDT(void)
 {
 	//	char msg[50];
 	t_now = MY_GetTick();
-//	dt_calc = (float)(t_now - t_prev) / 1000000.0F;
-	dt_calc = DLPF_DELAY / 1000000.0F;
+	dt_calc = (float)(t_now - t_prev) / 1000000.0F;
+//	dt_calc = DLPF_DELAY / 1000000.0F;
 	//	if (print_flag)
 	//	{
 	//		sprintf(msg, "t_now= %lu\r\n", t_now);
@@ -124,7 +125,7 @@ void calcFilteredYPR()
 
 void calcAngularAccelYPR()
 {
-	float asin_parameter = accelero_acceleration - (angular_acceleration * AXIS_TO_SENSOR / ACCELERATION_OF_GRAVITY);
+	float asin_parameter = accelero_acceleration - (angular_acceleration * FLOOR_TO_SENSOR / ACCELERATION_OF_GRAVITY);
 	if (asin_parameter > 1.0F)
 		asin_parameter = 1.0F;
 	else if (asin_parameter < -1.0F)

@@ -51,7 +51,7 @@ uint32_t t_to = 0UL;
 
 float alpha_former = 0.30F;
 float alpha_latter = 0.030F;
-float LIMIT_BETA = 	0.950F;
+float LIMIT_BETA = 	0.920F;
 float coefficient = 0.10F;
 
 float cos_val = 0.0F;
@@ -69,14 +69,18 @@ Robot_Drive prev_drive_flag = HALT;
 
 float VELOCITY_CONSTANT = 0.0F;
 const float ACCELERATION_OF_GRAVITY = 9.806650F;
-float ACCELERATION_OF_RISING = 1.0F;
+float ACCELERATION_OF_RISING = 0.000F;
+float ACCELERATION_OF_STOPPING = 0.150F;
+float ACCELERATION_OF_HALTING = 0.150F;
 const float STEP_RADIAN = 0.020F;
 const float WHEEL_RADIUS = 0.0350F;
 const float WHEEL_CONSTANT = 0.00070F;
 float DEGREE_COEFFICIENT = 3.140F;
 const float AXIS_TO_SENSOR = 0.180F;
+const float FLOOR_TO_SENSOR = 0.2150F;
 float TIME_CONSTANT = 0.0100F;
-float INERTIA_MOMENT = 0.2940F;
+//float INERTIA_MOMENT = 0.2940F;
+float INERTIA_MOMENT = 0.030F;
 
 uint32_t step_delay_to = 0UL;
 float max_angular_acceleration = 0.0F;
@@ -1268,7 +1272,7 @@ uint32_t getStepDelay(void)
 	{
 		if (step%2 == 0U)
 		{
-			temp_float = ((-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.250000F)) -	(ACCELERATION_OF_GRAVITY * sinf(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_RISING)) /
+			temp_float = ((-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.250000F)) -	(ACCELERATION_OF_GRAVITY * sinf(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_STOPPING)) /
 					cosf(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay_float));
 			if (temp_float > 0.000000F)
 				new_delay = (WHEEL_CONSTANT / temp_float) * 1000000.0F;
@@ -1277,7 +1281,7 @@ uint32_t getStepDelay(void)
 		}
 		else if (step%2 == 1U)
 		{
-			temp_float = ((-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.200000F)) -	(ACCELERATION_OF_GRAVITY * sinf(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_RISING)) /
+			temp_float = ((-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.200000F)) -	(ACCELERATION_OF_GRAVITY * sinf(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_STOPPING)) /
 					cosf(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay_float));
 			if (temp_float > 0.000000F)
 				new_delay = (WHEEL_CONSTANT / temp_float) * 1000000.0F;
@@ -1294,7 +1298,7 @@ uint32_t getStepDelay(void)
 	{
 		if (step%2 == 0U)
 		{
-			temp_float = ((-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.250000F)) +	(ACCELERATION_OF_GRAVITY * sinf(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_RISING)) /
+			temp_float = ((-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.250000F)) +	(ACCELERATION_OF_GRAVITY * sinf(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_STOPPING)) /
 					cosf(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay_float));
 			if (temp_float > 0.000000F)
 				new_delay = (WHEEL_CONSTANT / temp_float) * 1000000.0F;
@@ -1303,7 +1307,7 @@ uint32_t getStepDelay(void)
 		}
 		else if (step%2 == 1U)
 		{
-			temp_float = ((-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.200000F)) +	(ACCELERATION_OF_GRAVITY * sinf(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_RISING)) /
+			temp_float = ((-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.200000F)) +	(ACCELERATION_OF_GRAVITY * sinf(fabsf(curr_filtered_angle.x / RADIANS_TO_DEGREES))) + ACCELERATION_OF_STOPPING)) /
 					cosf(curr_filtered_angle.x / RADIANS_TO_DEGREES)) + (WHEEL_CONSTANT / step_delay_float));
 			if (temp_float > 0.000000F)
 				new_delay = (WHEEL_CONSTANT / temp_float) * 1000000.0F;
@@ -1320,7 +1324,7 @@ uint32_t getStepDelay(void)
 	{
 		if (step%2 == 0U)
 		{
-			temp_float = (-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.250000F)) + ACCELERATION_OF_RISING)) + (WHEEL_CONSTANT / step_delay_float));
+			temp_float = (-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.250000F)) + ACCELERATION_OF_HALTING)) + (WHEEL_CONSTANT / step_delay_float));
 			if (temp_float > 0.000000F)
 				new_delay = (WHEEL_CONSTANT / temp_float) * 1000000.0F;
 			//			else
@@ -1328,7 +1332,7 @@ uint32_t getStepDelay(void)
 		}
 		else if (step%2 == 1U)
 		{
-			temp_float = (-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.200000F)) + ACCELERATION_OF_RISING)) + (WHEEL_CONSTANT / step_delay_float));
+			temp_float = (-(TIME_CONSTANT * ((INERTIA_MOMENT * (0.200000F)) + ACCELERATION_OF_HALTING)) + (WHEEL_CONSTANT / step_delay_float));
 			if (temp_float > 0.000000F)
 				new_delay = (WHEEL_CONSTANT / temp_float) * 1000000.0F;
 			//			else
@@ -1455,9 +1459,9 @@ void setFlag(void)
 				//						drive_flag = ACCEL;
 				//					}
 				//				}
-				if (prev_drive_flag == ACCEL)
-					drive_flag = SUDDEN_ACCEL;
-				else
+//				if (prev_drive_flag == ACCEL)
+//					drive_flag = SUDDEN_ACCEL;
+//				else
 					drive_flag = ACCEL;
 			}
 			else
@@ -1489,7 +1493,7 @@ void setFlag(void)
 		}
 		else
 		{
-			if (((direction_flag == FRONT) && ((-gyro_f.x) >= 0.0F)) || ((direction_flag == REAR) && ((-gyro_f.x) < 0.000000F)))
+			if (((direction_flag == FRONT) && ((-gyro_f.x) >= 0.000000F)) || ((direction_flag == REAR) && ((-gyro_f.x) < 0.000000F)))
 			{
 				drive_flag = SUDDEN_DECEL;
 			}
