@@ -35,8 +35,9 @@ float accel_xz, accel_yz;
 MPU6050_float_t tmp_angle = {0.0F, 0.0F, 0.0F};
 MPU6050_float_t curr_filtered_angle = {0.0F, 0.0F, 0.0F};
 
-float COMPLEMENTARY_ALPHA = 0.50F;
-//float COMPLEMENTARY_ALPHA = 1.00F;
+float COMPLEMENTARY_ALPHA = 0.9960F;
+//float COMPLEMENTARY_ALPHA = 0.99950F;
+//float COMPLEMENTARY_ALPHA = 0.0F;
 float REAL_DEGREE_COEFFICIENT = 0.0F;
 
 int8_t zero_flag = 0;
@@ -44,6 +45,7 @@ int8_t zero_flag = 0;
 float prev_gyro_x = 0.0F;
 float angular_acceleration = 0.0F;
 float accelero_acceleration = 0.0F;
+extern float accel;
 
 void initDT(void)
 {

@@ -51,7 +51,7 @@ uint32_t t_to = 0UL;
 
 float alpha_former = 0.30F;
 float alpha_latter = 0.030F;
-float LIMIT_BETA = 	0.920F;
+float LIMIT_BETA = 	0.650F;
 float coefficient = 0.10F;
 
 float cos_val = 0.0F;
@@ -70,8 +70,8 @@ Robot_Drive prev_drive_flag = HALT;
 float VELOCITY_CONSTANT = 0.0F;
 const float ACCELERATION_OF_GRAVITY = 9.806650F;
 float ACCELERATION_OF_RISING = 0.000F;
-float ACCELERATION_OF_STOPPING = 0.150F;
-float ACCELERATION_OF_HALTING = 0.150F;
+float ACCELERATION_OF_STOPPING = 0.050F;
+float ACCELERATION_OF_HALTING = 0.050F;
 const float STEP_RADIAN = 0.020F;
 const float WHEEL_RADIUS = 0.0350F;
 const float WHEEL_CONSTANT = 0.00070F;
@@ -80,7 +80,7 @@ const float AXIS_TO_SENSOR = 0.180F;
 const float FLOOR_TO_SENSOR = 0.2150F;
 float TIME_CONSTANT = 0.0100F;
 //float INERTIA_MOMENT = 0.2940F;
-float INERTIA_MOMENT = 0.030F;
+float INERTIA_MOMENT = 0.010F;
 
 uint32_t step_delay_to = 0UL;
 float max_angular_acceleration = 0.0F;
@@ -97,7 +97,7 @@ float starting_angle = 0.0F;
 int8_t find_flag = 0;
 
 int8_t excite_flag = 0;
-
+float accel = 0.0F;
 
 void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
 		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_)
@@ -1523,7 +1523,9 @@ void reactToAngleGyro(osThreadId_t handle)
 
 	setFlag();
 	adjustVelocityLimit();
+	prev_step_delay = step_delay;
 	step_delay = getStepDelay();
+	accel = ((1.0F / ((float)step_delay / 1000000.0F)) - (1.0F / ((float)prev_step_delay / 1000000.0F))) * WHEEL_CONSTANT / ((float)prev_step_delay / 1000000.0F);
 	//	if ((prev_drive_flag == HALT) && (drive_flag != HALT))
 	//	{
 	//		step_delay_total = 0UL;
@@ -1553,7 +1555,7 @@ void reactToAngleGyro(osThreadId_t handle)
 
 	if (drive_flag == HALT)
 	{
-		unipolar_parallel_sequence_onetwoPhase(DLPF_DELAY, handle);
+		unipolar_parallel_sequence_onetwoPhase((DLPF_DELAY+500UL), handle);
 	}
 	else
 	{

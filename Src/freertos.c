@@ -62,9 +62,10 @@ MPU6050_int32_t diffacc = {0, 0, 0};
 MPU6050_int32_t diffgyro = {0, 0, 0};
 int16_t tmpr;
 uint32_t sync_period = 20UL;
-uint32_t DLPF_DELAY = 3000UL;
+uint32_t DLPF_DELAY = 1000UL;
 
 int8_t init_flag = 0;
+int8_t isWake = 0;
 
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -165,7 +166,7 @@ void StartDefaultTask(void *argument)
 	GPIO_PinState LD4_state = GPIO_PIN_RESET;
 
 	step_reset(0UL);
-	MPU6050_Init(MPU6050_DLPF_BW_98);
+	MPU6050_Init(MPU6050_DLPF_BW_5);
 	//	while (init_flag == 0)
 	//	{
 	//		osThreadYield();
@@ -195,12 +196,14 @@ void StartDefaultTask(void *argument)
 		//		if ((MY_GetTick() - prev_tick2) >= 4800UL)
 		if ((MY_GetTick() - t_prev) >= DLPF_DELAY)
 		{
-			//			t_from = MY_GetTick();
+			isWake = 0;
 			osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
-//			dt_calc = (MY_GetTick() - t_prev) / 1000000.0F;
+			isWake = 1;
+			dt_calc = (MY_GetTick() - t_prev) / 1000000.0F;
+			t_from = MY_GetTick();
 			MPU6050_GetData(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
-			calcDT();
-//			t_prev = MY_GetTick();
+//			calcDT();
+			t_prev = MY_GetTick();
 
 			diffacc.x = (int32_t)(acc.x - accOffset.x);
 			diffacc.y = (int32_t)(acc.y - accOffset.y);
@@ -228,10 +231,10 @@ void StartDefaultTask(void *argument)
 					LD4_state = GPIO_PIN_RESET;
 				}
 			}
-			//			t_to = MY_GetTick();
-			//			dt_proc = t_to - t_from;
-			//			if (dt_proc > dt_proc_max)
-			//				dt_proc_max = dt_proc;
+			t_to = MY_GetTick();
+			dt_proc = t_to - t_from;
+			if (dt_proc > dt_proc_max)
+				dt_proc_max = dt_proc;
 		}
 		//		count++;
 		//		sprintf(msg, "status=%d\r\n", status);

@@ -97,6 +97,7 @@ extern uint8_t step_remain;
 extern uint8_t step;
 extern float INERTIA_MOMENT;
 extern uint32_t DLPF_DELAY;
+extern int8_t isWake;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -513,14 +514,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case 'h' :
-			INERTIA_MOMENT = INERTIA_MOMENT - 0.010f;
+//			INERTIA_MOMENT = INERTIA_MOMENT - 0.010f;
+			INERTIA_MOMENT = INERTIA_MOMENT - 0.0010f;
 			break;
 		case 'j' :
 			sprintf(msg, "INERTIA_MOMENT=%.5f\r\n", INERTIA_MOMENT);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case 'k' :
-			INERTIA_MOMENT = INERTIA_MOMENT + 0.010f;
+//			INERTIA_MOMENT = INERTIA_MOMENT + 0.010f;
+			INERTIA_MOMENT = INERTIA_MOMENT + 0.0010f;
 			break;
 		case 'v' :
 			TIME_CONSTANT = TIME_CONSTANT - 0.0001f;
@@ -573,16 +576,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			LIMIT_BETA = LIMIT_BETA + 0.010f;
 			break;
 		case '/' :
-//			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.00010F;
-						COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.10F;
+			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.00010F;
+//						COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.10F;
 			break;
 		case '*' :
 			sprintf(msg, "COMPLEMENTARY_ALPHA=%.4f\r\n", COMPLEMENTARY_ALPHA);
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case '-' :
-//			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.00010F;
-						COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.10F;
+			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.00010F;
+//						COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.10F;
 			break;
 		case 't' :
 			sprintf(msg, "dt_calc=%.6f\t dt_proc_max=%.10f\t dt_proc=%.10f\t t_from=%lu\t t_to=%lu\r\n", dt_calc, ((float)dt_proc_max / 1000000.0F), ((float)dt_proc / 1000000.0F), t_from, t_to);
@@ -715,16 +718,14 @@ uint32_t MY_GetTick()
 void MY_Delay(uint32_t step_delay, osThreadId_t handle)
 {
 	uint32_t start_tick = MY_GetTick();
-	int8_t isWake = 0;
 
 	while ((MY_GetTick() - start_tick) < step_delay)
 	{
 		if (isWake == 0)
 		{
-			if ((MY_GetTick() - start_tick) >= DLPF_DELAY)
+			if ((MY_GetTick() - start_tick) >= (step_delay-500UL))
 			{
 				osThreadFlagsSet(handle, 0x0001U);
-				isWake = 1;
 			}
 		}
 		osThreadYield();
