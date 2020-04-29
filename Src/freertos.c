@@ -167,18 +167,23 @@ void StartDefaultTask(void *argument)
 
 	step_reset(0UL);
 	MPU6050_Init(MPU6050_DLPF_BW_5);
-	//	while (init_flag == 0)
-	//	{
-	//		osThreadYield();
-	//	}
-	//	MPU6050_InitOffset(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
-	accOffset.x = 918;
-	accOffset.y = 1369;
-	accOffset.z = -14872;
-	gyroOffset.x = -20;
-	gyroOffset.y = 35;
-	gyroOffset.z = -24;
-
+//	while (init_flag == 0)
+//	{
+//		osThreadYield();
+//	}
+//	MPU6050_InitOffset(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
+	//	accOffset.x = 918;
+	//	accOffset.y = 1369;
+	//	accOffset.z = -14872;
+	//	gyroOffset.x = -20;
+	//	gyroOffset.y = 35;
+	//	gyroOffset.z = -24;
+		accOffset.x = 931;
+		accOffset.y = 676;
+		accOffset.z = -7461;
+		gyroOffset.x = -27;
+		gyroOffset.y = 20;
+		gyroOffset.z = -12;
 	//	sprintf(msg, "%d,%d,%d,%d,%d,%d\r\n", accOffset.x, accOffset.y, accOffset.z, gyroOffset.x, gyroOffset.y, gyroOffset.z);
 	//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 3000UL);
 	osThreadFlagsSet(motorSyncHandle, 0x0001U);
@@ -196,13 +201,13 @@ void StartDefaultTask(void *argument)
 		//		if ((MY_GetTick() - prev_tick2) >= 4800UL)
 		if ((MY_GetTick() - t_prev) >= DLPF_DELAY)
 		{
-			isWake = 0;
-			osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
-			isWake = 1;
+			//			isWake = 0;
+			//			osThreadFlagsWait(0x0001U, osFlagsWaitAll, osWaitForever);
+			//			isWake = 1;
 			dt_calc = (MY_GetTick() - t_prev) / 1000000.0F;
-			t_from = MY_GetTick();
+			//			t_from = MY_GetTick();
 			MPU6050_GetData(&acc.x, &acc.y, &acc.z, &gyro.x, &gyro.y, &gyro.z, &tmpr);
-//			calcDT();
+			//			calcDT();
 			t_prev = MY_GetTick();
 
 			diffacc.x = (int32_t)(acc.x - accOffset.x);
@@ -231,10 +236,10 @@ void StartDefaultTask(void *argument)
 					LD4_state = GPIO_PIN_RESET;
 				}
 			}
-			t_to = MY_GetTick();
-			dt_proc = t_to - t_from;
-			if (dt_proc > dt_proc_max)
-				dt_proc_max = dt_proc;
+			//			t_to = MY_GetTick();
+			//			dt_proc = t_to - t_from;
+			//			if (dt_proc > dt_proc_max)
+			//				dt_proc_max = dt_proc;
 		}
 		//		count++;
 		//		sprintf(msg, "status=%d\r\n", status);

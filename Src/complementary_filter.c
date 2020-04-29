@@ -15,8 +15,10 @@ extern const float AXIS_TO_SENSOR;
 extern const float FLOOR_TO_SENSOR;
 extern float ACCELERATION_OF_GRAVITY;
 const float RADIANS_TO_DEGREES = 180.0F / 3.141590F;
-const float GYROXYZ_TO_DEGREES_PER_SEC = 131.0F;
+//const float GYROXYZ_TO_DEGREES_PER_SEC = 131.0F;
+const float GYROXYZ_TO_DEGREES_PER_SEC = 65.5360F;
 extern uint32_t DLPF_DELAY;
+extern Motor_Rotation rotation_flag;
 
 uint32_t t_prev = 0;
 uint32_t t_now = 0;
@@ -46,6 +48,8 @@ float prev_gyro_x = 0.0F;
 float angular_acceleration = 0.0F;
 float accelero_acceleration = 0.0F;
 extern float accel;
+float prev_accel_y = 0.0F;
+float prev_accel_z = 0.0F;
 
 void initDT(void)
 {
@@ -57,7 +61,7 @@ void calcDT(void)
 	//	char msg[50];
 	t_now = MY_GetTick();
 	dt_calc = (float)(t_now - t_prev) / 1000000.0F;
-//	dt_calc = DLPF_DELAY / 1000000.0F;
+	//	dt_calc = DLPF_DELAY / 1000000.0F;
 	//	if (print_flag)
 	//	{
 	//		sprintf(msg, "t_now= %lu\r\n", t_now);
@@ -72,17 +76,22 @@ void calcDT(void)
 
 void calcAccelYPR(void)
 {
-	accel_f.x = (float)diffacc.x / 16384.0F;
-	accel_f.y = (float)diffacc.y / 16384.0F;
+//	accel_f.x = (float)diffacc.x / 16384.0F;
+	accel_f.x = (float)diffacc.x / 8192.0F;
+//	accel_f.y = (float)diffacc.y / 16384.0F;
+	prev_accel_y = accel_f.y;
+	accel_f.y = (float)diffacc.y / 8192.0F;
 
 	// 센서가 뒤집어져서 accelerometer Z축이 음수의 값을 가짐
 	//	accel.z = (float_t)(diffacc.z - 16384L) / 16384.0F;
-	accel_f.z = (float)fabsf((diffacc.z - 16384L)) / 16384.0F;
+//	accel_f.z = (float)(-(diffacc.z - 16384L)) / 16384.0F;
+	prev_accel_z = accel_f.z;
+	accel_f.z = (float)(-(diffacc.z - 8192L)) / 8192.0F;
 
-	//	accel_yz = (float)sqrt(pow(accel.y, 2) + pow(accel.z, 2));
+	//	accel_yz = (float)sqrt(powf(accel.y, 2) + powf(accel.z, 2));
 	//	accel_angle.y = (float)atan(-accel.x / accel_yz) * RADIANS_TO_DEGREES;
 
-	accel_xz = (float)sqrtf(pow(accel_f.x, 2) + pow(accel_f.z, 2));
+	accel_xz = (float)sqrtf(powf(accel_f.x, 2.0F) + powf(accel_f.z, 2.0F));
 	accel_angle.x = (float)atanf(accel_f.y / accel_xz) * RADIANS_TO_DEGREES;
 
 	//	accel_angle.z = 0;
@@ -112,7 +121,7 @@ void calcFilteredYPR()
 
 
 	prev_filtered_angle_x = curr_filtered_angle.x;
-//	curr_filtered_angle.x = (COMPLEMENTARY_ALPHA * tmp_angle.x) + ((1.0000F-COMPLEMENTARY_ALPHA) * accel_angle.x);
+	//	curr_filtered_angle.x = (COMPLEMENTARY_ALPHA * tmp_angle.x) + ((1.0000F-COMPLEMENTARY_ALPHA) * accel_angle.x);
 	curr_filtered_angle.x = (COMPLEMENTARY_ALPHA * tmp_angle.x) + ((1.0000F-COMPLEMENTARY_ALPHA) * angular_accel_angle);
 	//	filtered_angle.y = (ALPHA * tmp_angle.y) + ((1.0F-ALPHA) * accel_angle.y);
 	//	filtered_angle.z = tmp_angle.z;
@@ -121,13 +130,45 @@ void calcFilteredYPR()
 	//	REAL_DEGREE_COEFFICIENT = fabsf((prev_filtered_angle_x - curr_filtered_angle.x) / RADIANS_TO_DEGREES) / dt_calc;
 	//	if (REAL_DEGREE_COEFFICIENT == 0.0F)
 	//		zero_flag = 1;
-
-
 }
 
 void calcAngularAccelYPR()
 {
-	float asin_parameter = accelero_acceleration - (angular_acceleration * FLOOR_TO_SENSOR / ACCELERATION_OF_GRAVITY);
+	//	float asin_parameter = accelero_acceleration - (angular_acceleration * FLOOR_TO_SENSOR / ACCELERATION_OF_GRAVITY);
+	//	if (asin_parameter > 1.0F)
+	//		asin_parameter = 1.0F;
+	//	else if (asin_parameter < -1.0F)
+	//		asin_parameter = -1.0F;
+	//	angular_accel_angle = asinf(asin_parameter) * RADIANS_TO_DEGREES;
+	float asin_parameter = 0.0F;
+
+	if (rotation_flag == FORWARD)
+	{
+		if (curr_filtered_angle.x >= 0.0F)
+		{
+			asin_parameter = ((ACCELERATION_OF_GRAVITY * prev_accel_y) - (-accel * prev_accel_z) - (-accel * powf((gyro_f.x / RADIANS_TO_DEGREES), 2.0F) * FLOOR_TO_SENSOR / ACCELERATION_OF_GRAVITY)
+					- (angular_acceleration * FLOOR_TO_SENSOR)) / (ACCELERATION_OF_GRAVITY - (-powf(accel, 2.0F) / ACCELERATION_OF_GRAVITY));
+		}
+		else if (curr_filtered_angle.x < 0.0F)
+		{
+			asin_parameter = ((ACCELERATION_OF_GRAVITY * prev_accel_y) - (-accel * prev_accel_z) - (-accel * powf((gyro_f.x / RADIANS_TO_DEGREES), 2.0F) * FLOOR_TO_SENSOR / ACCELERATION_OF_GRAVITY)
+					- (angular_acceleration * FLOOR_TO_SENSOR)) / (ACCELERATION_OF_GRAVITY + (-powf(accel, 2.0F) / ACCELERATION_OF_GRAVITY));
+		}
+	}
+	else if (rotation_flag == BACKWARD)
+	{
+		if (curr_filtered_angle.x >= 0.0F)
+		{
+			asin_parameter = ((ACCELERATION_OF_GRAVITY * prev_accel_y) - (accel * prev_accel_z) - (accel * powf((gyro_f.x / RADIANS_TO_DEGREES), 2.0F) * FLOOR_TO_SENSOR / ACCELERATION_OF_GRAVITY)
+					- (angular_acceleration * FLOOR_TO_SENSOR)) / (ACCELERATION_OF_GRAVITY - (powf(accel, 2.0F) / ACCELERATION_OF_GRAVITY));
+		}
+		else if (curr_filtered_angle.x < 0.0F)
+		{
+			asin_parameter = ((ACCELERATION_OF_GRAVITY * prev_accel_y) - (accel * prev_accel_z) - (accel * powf((gyro_f.x / RADIANS_TO_DEGREES), 2.0F) * FLOOR_TO_SENSOR / ACCELERATION_OF_GRAVITY)
+					- (angular_acceleration * FLOOR_TO_SENSOR)) / (ACCELERATION_OF_GRAVITY + (powf(accel, 2.0F) / ACCELERATION_OF_GRAVITY));
+		}
+	}
+
 	if (asin_parameter > 1.0F)
 		asin_parameter = 1.0F;
 	else if (asin_parameter < -1.0F)

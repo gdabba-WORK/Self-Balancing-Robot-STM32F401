@@ -183,7 +183,7 @@ void MPU6050_Init(uint8_t	lpf)
 	MPU6050_SetSleepEnabled(0);
 
 	// MPU6050 Sample Rate = 1kHz
-	MPU6050_WriteOneByte(MPU6050_RA_SMPLRT_DIV, 7U);
+//	MPU6050_WriteOneByte(MPU6050_RA_SMPLRT_DIV, 7U);
 	MPU6050_ReadBuff(MPU6050_RA_SMPLRT_DIV, 1, buffer);
 	sprintf(msg, "SMPLRT=%u\r\n", buffer[0]);
 	HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 0xFFFF);
@@ -191,8 +191,10 @@ void MPU6050_Init(uint8_t	lpf)
 
 	//	MPU6050_SetClockSource(MPU6050_CLOCK_PLL_XGYRO);
 	MPU6050_SetClockSource(MPU6050_CLOCK_PLL_YGYRO);
-	MPU6050_SetFullScaleGyroRange(MPU6050_GYRO_FS_250);
-	MPU6050_SetFullScaleAccelRange(MPU6050_ACCEL_FS_2);
+//	MPU6050_SetFullScaleGyroRange(MPU6050_GYRO_FS_250);
+	MPU6050_SetFullScaleGyroRange(MPU6050_GYRO_FS_500);
+//	MPU6050_SetFullScaleAccelRange(MPU6050_ACCEL_FS_2);
+	MPU6050_SetFullScaleAccelRange(MPU6050_ACCEL_FS_4);
 
 	/*
 	 	MPU6050_DLPF_BW_256         0x00

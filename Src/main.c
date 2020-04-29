@@ -98,6 +98,8 @@ extern uint8_t step;
 extern float INERTIA_MOMENT;
 extern uint32_t DLPF_DELAY;
 extern int8_t isWake;
+extern const float ACCELERATION_OF_GRAVITY;
+extern MPU6050_float_t accel_f, gyro_f;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -665,6 +667,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 
+		case 'g' :
+			sprintf(msg, "ay=%5.3fG\taz=%5.3fG\tgx=%5.3fD\taa=%.10f\r\n",
+					(accel_f.y*ACCELERATION_OF_GRAVITY), (accel_f.z*ACCELERATION_OF_GRAVITY),
+					gyro_f.x, angular_acceleration);
+			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
+			break;
+
 		case 'm' :
 			if (find_flag == 0)
 				find_flag = 1;
@@ -721,18 +730,18 @@ void MY_Delay(uint32_t step_delay, osThreadId_t handle)
 
 	while ((MY_GetTick() - start_tick) < step_delay)
 	{
-		if (isWake == 0)
-		{
-			if ((MY_GetTick() - start_tick) >= (step_delay-500UL))
-			{
-				osThreadFlagsSet(handle, 0x0001U);
-			}
-		}
+//		if (isWake == 0)
+//		{
+//			if ((MY_GetTick() - start_tick) >= (step_delay-500UL))
+//			{
+//				osThreadFlagsSet(handle, 0x0001U);
+//			}
+//		}
 		osThreadYield();
 	}
 
-	if (isWake == 0)
-		osThreadFlagsSet(handle, 0x0001U);
+//	if (isWake == 0)
+//		osThreadFlagsSet(handle, 0x0001U);
 }
 /* USER CODE END 4 */
 

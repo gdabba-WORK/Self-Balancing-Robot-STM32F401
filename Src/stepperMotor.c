@@ -23,7 +23,7 @@ extern float dt_calc;
 extern MPU6050_float_t gyro_f;
 extern float COMPLEMENTARY_ALPHA;
 
-float boundary_inner = 1.50F;
+float boundary_inner = 1.00F;
 float boundary_outer = 1.00F;
 uint8_t step = 0U;
 uint8_t step_remain = 0U;
@@ -35,8 +35,8 @@ uint32_t step_delay_dynamic = 5UL;
 uint32_t step_delay_vertical = 5000UL;
 uint32_t step_delay_horizontal = 2000UL;
 uint32_t step_delay_low = 5000UL;
-uint32_t step_delay_high = 10000UL;
-uint32_t step_delay = 10000UL;
+uint32_t step_delay_high = 8500UL;
+uint32_t step_delay = 8500UL;
 uint32_t step_delay_temp = 0UL;
 uint32_t step_delay_total = 0UL;
 extern uint32_t DLPF_DELAY;
@@ -51,7 +51,7 @@ uint32_t t_to = 0UL;
 
 float alpha_former = 0.30F;
 float alpha_latter = 0.030F;
-float LIMIT_BETA = 	0.650F;
+float LIMIT_BETA = 	0.460F;
 float coefficient = 0.10F;
 
 float cos_val = 0.0F;
@@ -70,8 +70,8 @@ Robot_Drive prev_drive_flag = HALT;
 float VELOCITY_CONSTANT = 0.0F;
 const float ACCELERATION_OF_GRAVITY = 9.806650F;
 float ACCELERATION_OF_RISING = 0.000F;
-float ACCELERATION_OF_STOPPING = 0.050F;
-float ACCELERATION_OF_HALTING = 0.050F;
+float ACCELERATION_OF_STOPPING = 0.0F;
+float ACCELERATION_OF_HALTING = 0.0F;
 const float STEP_RADIAN = 0.020F;
 const float WHEEL_RADIUS = 0.0350F;
 const float WHEEL_CONSTANT = 0.00070F;
@@ -80,7 +80,7 @@ const float AXIS_TO_SENSOR = 0.180F;
 const float FLOOR_TO_SENSOR = 0.2150F;
 float TIME_CONSTANT = 0.0100F;
 //float INERTIA_MOMENT = 0.2940F;
-float INERTIA_MOMENT = 0.010F;
+float INERTIA_MOMENT = 0.030F;
 
 uint32_t step_delay_to = 0UL;
 float max_angular_acceleration = 0.0F;
@@ -1525,7 +1525,7 @@ void reactToAngleGyro(osThreadId_t handle)
 	adjustVelocityLimit();
 	prev_step_delay = step_delay;
 	step_delay = getStepDelay();
-	accel = ((1.0F / ((float)step_delay / 1000000.0F)) - (1.0F / ((float)prev_step_delay / 1000000.0F))) * WHEEL_CONSTANT / ((float)prev_step_delay / 1000000.0F);
+	accel = ((WHEEL_CONSTANT / ((float)step_delay / 1000000.0F)) - (WHEEL_CONSTANT / ((float)prev_step_delay / 1000000.0F))) / ((float)prev_step_delay / 1000000.0F);
 	//	if ((prev_drive_flag == HALT) && (drive_flag != HALT))
 	//	{
 	//		step_delay_total = 0UL;
