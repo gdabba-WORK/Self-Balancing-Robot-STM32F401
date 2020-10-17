@@ -9,11 +9,25 @@
 #define INC_COMPLEMENTARY_FILTER_H_
 
 #include "main.h"
-#include <math.h>
 
 typedef struct {
 	float x;
 	float y;
 	float z;
 } MPU6050_float_t;
+
+
+void initDT(void);
+
+void calcDT(void);
+
+void calcAccelYPR(void);
+
+void calcGyroYPR(void);
+
+void calcFilteredYPR();
+
+void calcAngularAccelYPR();
 #endif /* INC_COMPLEMENTARY_FILTER_H_ */
+
+

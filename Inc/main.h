@@ -36,7 +36,16 @@ extern "C" {
 #include "stm32f4xx_hal_uart.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <math.h>
 #include "stepperMotor.h"
+#include "complementary_filter.h"
+#include "MPU6050.h"
+#include "usart.h"
+#include "i2c.h"
+#include "cmsis_os.h"
+#include "cmsis_os2.h"
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -78,6 +87,8 @@ void Error_Handler(void);
 #define SM1A_GPIO_Port GPIOA
 #define LD2_Pin GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
+#define LD4_Pin GPIO_PIN_6
+#define LD4_GPIO_Port GPIOA
 #define SM1A__Pin GPIO_PIN_0
 #define SM1A__GPIO_Port GPIOB
 #define SM2A_Pin GPIO_PIN_1
@@ -105,7 +116,10 @@ void Error_Handler(void);
 #define SM2EN_Pin GPIO_PIN_5
 #define SM2EN_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
-
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+void HAL_Delay(uint32_t Delay);
+uint32_t MY_GetTick();
+void MY_Delay(uint32_t step_delay, osThreadId_t);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

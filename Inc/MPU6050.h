@@ -25,9 +25,7 @@
 #define __MPU6050_H
 
 #include "main.h"
-#include "i2c.h"
-#include "cmsis_os.h"
-#include "usart.h"
+
 
 extern I2C_HandleTypeDef hi2c3;
 
@@ -361,21 +359,21 @@ extern I2C_HandleTypeDef hi2c3;
 #define true 1
 #define false 0
 
-#define	ALPHA	0.95	// 칼만필터 알파값
+//#define ALPHA	0.95	// 칼만필터 알파값
 
 typedef struct
 {
-	int16_t X;
-	int16_t Y;
-	int16_t Z;
+	int16_t x;
+	int16_t y;
+	int16_t z;
 }MPU6050_int16_t;
 
 
 typedef struct
 {
-	int32_t X;
-	int32_t Y;
-	int32_t Z;
+	int32_t x;
+	int32_t y;
+	int32_t z;
 }MPU6050_int32_t;
 
 typedef struct
