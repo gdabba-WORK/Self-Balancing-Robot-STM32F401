@@ -55,18 +55,6 @@ typedef enum
 	SUDDEN_ACCEL	= 7U,
 	SUDDEN_DECEL	= 8U
 } Robot_Drive;
-void HAL_Delay(uint32_t Delay);
-
-void bigStepper_forward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
-		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_);
-void bigStepper_forward_sequence2(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
-		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_);
-void bigStepper_backward_sequence(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
-		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_);
-void bigStepper_slower(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
-		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_);
-void reactToAccel(GPIO_TypeDef * gpioA, uint16_t pinA, GPIO_TypeDef * gpioA_, uint16_t pinA_,
-		GPIO_TypeDef * gpioB, uint16_t pinB, GPIO_TypeDef * gpioB_, uint16_t pinB_);
 
 void step_A(void);
 void step_B(void);
@@ -76,14 +64,6 @@ void step_AB(void);
 void step_aB(void);
 void step_ab(void);
 void step_Ab(void);
-void new_step_A(uint32_t step_delay);
-void new_step_B(uint32_t step_delay);
-void new_step_a(uint32_t step_delay);
-void new_step_b(uint32_t step_delay);
-void new_step_AB(uint32_t step_delay);
-void new_step_aB(uint32_t step_delay);
-void new_step_ab(uint32_t step_delay);
-void new_step_Ab(uint32_t step_delay);
 void step_ABa(void);
 void step_Bab(void);
 void step_abA(void);
@@ -94,9 +74,7 @@ void unipolar_parallel_sequence_onePhase(uint32_t step_delay, osThreadId_t handl
 void unipolar_parallel_sequence_twoPhase(uint32_t step_delay, osThreadId_t handle);
 void unipolar_parallel_sequence_onetwoPhase(uint32_t step_delay, osThreadId_t handle);
 void unipolar_parallel_sequence_threePhase(uint32_t step_delay, osThreadId_t handle);
-void new_unipolar_parallel_sequence_onetwoPhase(uint32_t step_delay);
 
-//void reactToAccel_parallel(int8_t* angle);
 float getAlpha(void);
 void reactToAngle(void);
 

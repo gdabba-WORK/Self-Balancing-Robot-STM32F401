@@ -153,7 +153,6 @@ int main(void)
 	/* Initialize interrupts */
 	MX_NVIC_Init();
 	/* USER CODE BEGIN 2 */
-	//	char msg[20] = "Hello World!\n\r";
 	HAL_UART_Receive_IT(&huart1, &rx_data, 1);
 	HAL_TIM_Base_Start_IT(&htim10);
 
@@ -240,250 +239,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	char msg[100];
 
-	//	if (huart->Instance == USART1)
-	//	{
-	//		switch (rx_data) {
-	//		case '0' :
-	//			if ((sync_period - 5UL) > 0UL)
-	//				sync_period = sync_period - 5UL;
-	//			//			state_flag = NO_MOTOR;
-	//			break;
-	//		case '1' :
-	//			if ((step_max - 4U) > 0U)
-	//				step_max = step_max - 4U;
-	//			//			state_flag = LEFT_MOTOR;
-	//			break;
-	//		case '2' :
-	//			sprintf(msg, "step_max=%10d\r\n", step_max);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			//			state_flag = BOTH_MOTOR;
-	//			break;
-	//		case '3' :
-	//			step_max = step_max + 4U;
-	//			//			state_flag = RIGHT_MOTOR;
-	//			break;
-	//		case '4' :
-	//			step_delay_vertical = step_delay_vertical - 100UL;
-	//			//			step_delay_static = 0U;
-	//			//			step_delay_dynamic = 4U;
-	//			break;
-	//		case '5' :
-	//			sprintf(msg, "step_delay_vertical=%10lu\r\n", step_delay_vertical);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			//			step_delay_static = 1U;
-	//			//			step_delay_dynamic = 4U;
-	//			break;
-	//		case '6' :
-	////			if ((step_delay_vertical + 100UL) < step_delay_high)
-	//				step_delay_vertical = step_delay_vertical + 100UL;
-	//			//			step_delay_static = 2U;
-	//			//			step_delay_dynamic = 4U;
-	//			break;
-	//		case 'q' :
-	//			if ((step_delay_horizontal - 10UL) > 1020)
-	//				step_delay_horizontal = step_delay_horizontal - 10UL;
-	//			//			step_delay_static = 0U;
-	//			//			step_delay_dynamic = 4U;
-	//			break;
-	//		case 'w' :
-	//			sprintf(msg, "step_delay_horizontal=%10lu\r\n", step_delay_horizontal);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			//			step_delay_static = 1U;
-	//			//			step_delay_dynamic = 4U;
-	//			break;
-	//		case 'e' :
-	//			if ((step_delay_horizontal + 10UL) < step_delay_vertical)
-	//				step_delay_horizontal = step_delay_horizontal + 10UL;
-	//			//			step_delay_static = 2U;
-	//			//			step_delay_dynamic = 4U;
-	//			break;
-	//		case '7' :
-	//			if ((step_delay_high - 10UL) > step_delay_low)
-	//				step_delay_high = step_delay_high - 10UL;
-	//			//			mode_flag = ONE_PHASE;
-	//			break;
-	//		case '8' :
-	//			sprintf(msg, "step_delay_high=%10lu\r\n", step_delay_high);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			//			mode_flag = TWO_PHASE;
-	//			break;
-	//		case '9' :
-	//			step_delay_high = step_delay_high + 10UL;
-	//			//			mode_flag = ONETWO_PHASE;
-	//			break;
-	//		case '.' :
-	//			sync_period = sync_period + 5UL;
-	//			//			if (direction_flag == FORWARD)
-	//			//				direction_flag = BACKWARD;
-	//			//			else
-	//			//				direction_flag = FORWARD;
-	//			break;
-	//		case '+' :
-	//			sprintf(msg, "sync_period=%10lu\r\n", sync_period);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			break;
-	//		case '/' :
-	//			ACCELERATION_OF_RISING = ACCELERATION_OF_RISING - 0.01000F;
-	//			//			if ((boundary_outer - 0.1F) > boundary_inner)
-	//			//				boundary_outer = boundary_outer - 0.1F;
-	//			break;
-	//		case '*' :
-	//			sprintf(msg, "ACCELERATION_OF_RISING=%10.5f\r\n", ACCELERATION_OF_RISING);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			//			sprintf(msg, "boundary_outer=%10.2f\r\n", boundary_outer);
-	//			//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			break;
-	//		case '-' :
-	//			ACCELERATION_OF_RISING = ACCELERATION_OF_RISING + 0.01000F;
-	//			//			boundary_outer = boundary_outer + 0.1F;
-	//			break;
-	//		case 'j' :
-	//			sprintf(msg, "coefficient=%.2f\r\n", coefficient);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			break;
-	//		case 'k' :
-	//			sprintf(msg, "alpha_former=%.2f\r\n", alpha_former);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			break;
-	//		case 'l' :
-	//			sprintf(msg, "alpha_latter=%.2f\r\n", alpha_latter);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			break;
-	//		case 'n' :
-	//			if ((coefficient - 0.01F) > 0.0F)
-	//				coefficient = coefficient - 0.01F;
-	//			break;
-	//		case 'm' :
-	//			if ((coefficient + 0.01F) <= 1.0F)
-	//				coefficient = coefficient + 0.01F;
-	//			break;
-	//		case 'u' :
-	//			if ((alpha_former - 0.1F) > 0.0F)
-	//				alpha_former = alpha_former - 0.1F;
-	//			break;
-	//		case 'i' :
-	//			if ((alpha_former + 0.1F) <= 200.0F)
-	//				alpha_former = alpha_former + 0.1F;
-	//			break;
-	//		case '[' :
-	//			if ((beta - 0.01F) > 0.0F)
-	//				beta = beta - 0.01F;
-	//			break;
-	//		case ']' :
-	//			if ((beta + 0.01F) <= 1.0F)
-	//				beta = beta + 0.01F;
-	//			break;
-	//		case 'o' :
-	//			sprintf(msg, "angle=%9.6f\r\n", filtered_angle.x);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			break;
-	//		case 't' :
-	//			sprintf(msg, "dt=%.6f\r\n", dt);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			break;
-	//		case 'r' :
-	//			sprintf(msg, "status=%s\r\n", (status == HAL_OK) ? "HAL_OK" :
-	//					(status == HAL_ERROR) ? "HAL_ERROR" :
-	//							(status == HAL_BUSY) ? "HAL_BUSY" : "HAL_TIMEOUT");
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			break;
-	//		case 'p' :
-	//			print_flag = !(print_flag);
-	//			break;
-	//		case 'P' :
-	//			//			sprintf(msg, "step_max=%10d\r\n", step_max);
-	//			//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "step_delay_vertical=%10lu\r\n", step_delay_vertical);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "step_delay_horizontal=%10lu\r\n", step_delay_horizontal);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "step_delay_high=%10lu\r\n", step_delay_high);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "sync_period=%10lu\r\n", sync_period);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "boundary_inner=%10.2f\r\n", boundary_inner);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "boundary_outer=%10.2f\r\n", boundary_outer);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "coefficient=%.2f\r\n", coefficient);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "alpha_former=%.2f\r\n", alpha_former);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "alpha_latter=%.2f\r\n", alpha_latter);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "beta=%.2f\r\n", beta);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "dt=%.6f\r\n", dt);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "ALPHA=%.2f\r\n", ALPHA);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "gyroOffset=%10d\t%10d\t%10d\r\n", gyroOffset.x, gyroOffset.y, gyroOffset.z);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "accOffset=%10d\t%10d\t%10d\r\n", accOffset.x, accOffset.y, accOffset.z);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "ACCELERATION_OF_RISING=%10.5f\r\n", ACCELERATION_OF_RISING);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			sprintf(msg, "status=%s\r\n", (status == HAL_OK) ? "HAL_OK" :
-	//					(status == HAL_ERROR) ? "HAL_ERROR" :
-	//							(status == HAL_BUSY) ? "HAL_BUSY" : "HAL_TIMEOUT");
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			break;
-	//		case 'v' :
-	//			sprintf(msg, "ALPHA=%.2f\r\n", ALPHA);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			break;
-	//		case 'c' :
-	//			if ((ALPHA - 0.01F) >= 0.00F)
-	//				ALPHA = ALPHA - 0.01F;
-	//			break;
-	//		case 'b' :
-	//			if ((ALPHA + 0.01F) <= 1.00F)
-	//				ALPHA = ALPHA + 0.01F;
-	//			break;
-	//		case 'a' :
-	//			//			if ((boundary_inner - 0.1F) > 0.0F)
-	//			boundary_inner = boundary_inner - 0.1F;
-	//			//			state_flag = RIGHT_MOTOR;
-	//			break;
-	//		case 'd' :
-	//			//			if ((boundary_inner + 0.1F) < boundary_outer)
-	//			boundary_inner = boundary_inner + 0.1F;
-	//			//			state_flag = LEFT_MOTOR;
-	//			break;
-	//			//		case 'w' :
-	//			//			state_flag = BOTH_MOTOR;
-	//			//			if (direction_flag == BACKWARD)
-	//			//			{
-	//			//				direction_flag = FORWARD;
-	//			//				step_delay_dynamic = 4U;
-	//			//			}
-	//			//			break;
-	//		case 's' :
-	//			sprintf(msg, "boundary_inner=%10.2f\r\n", boundary_inner);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			//			state_flag = BOTH_MOTOR;
-	//			//			if (direction_flag == FORWARD)
-	//			//			{
-	//			//				direction_flag = BACKWARD;
-	//			//				step_delay_dynamic = 4U;
-	//			//			}
-	//			break;
-	//		case 'z' :
-	//			sprintf(msg, "cos_val=%7.3f\r\n", cos_val);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			break;
-	//		case 'h' :
-	//			sprintf(msg, "step_delay=%10ld\r\n", step_delay);
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			break;
-	//		case 'g' :
-	//			sprintf(msg, "drive_flag=%s\r\n", (drive_flag == HALT) ? "HALT" : (drive_flag == ACCEL) ? "ACCEL" : "DECEL");
-	//			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
-	//			break;
-	//		}
-	//		//		HAL_UART_Transmit(&huart2, &rx_data, 1, 10);
-	//		HAL_UART_Receive_IT(&huart1, &rx_data, 1);
-	//	}
 	if (huart->Instance == USART1)
 	{
 		switch (rx_data) {
@@ -516,7 +271,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case 'h' :
-//			INERTIA_MOMENT = INERTIA_MOMENT - 0.010f;
 			INERTIA_MOMENT = INERTIA_MOMENT - 0.0010f;
 			break;
 		case 'j' :
@@ -524,7 +278,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 3000UL);
 			break;
 		case 'k' :
-//			INERTIA_MOMENT = INERTIA_MOMENT + 0.010f;
 			INERTIA_MOMENT = INERTIA_MOMENT + 0.0010f;
 			break;
 		case 'v' :
@@ -579,7 +332,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			break;
 		case '/' :
 			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.00010F;
-//						COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA - 0.10F;
 			break;
 		case '*' :
 			sprintf(msg, "COMPLEMENTARY_ALPHA=%.4f\r\n", COMPLEMENTARY_ALPHA);
@@ -587,7 +339,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			break;
 		case '-' :
 			COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.00010F;
-//						COMPLEMENTARY_ALPHA = COMPLEMENTARY_ALPHA + 0.10F;
 			break;
 		case 't' :
 			sprintf(msg, "dt_calc=%.6f\t dt_proc_max=%.10f\t dt_proc=%.10f\t t_from=%lu\t t_to=%lu\r\n", dt_calc, ((float)dt_proc_max / 1000000.0F), ((float)dt_proc / 1000000.0F), t_from, t_to);
@@ -730,18 +481,8 @@ void MY_Delay(uint32_t step_delay, osThreadId_t handle)
 
 	while ((MY_GetTick() - start_tick) < step_delay)
 	{
-//		if (isWake == 0)
-//		{
-//			if ((MY_GetTick() - start_tick) >= (step_delay-500UL))
-//			{
-//				osThreadFlagsSet(handle, 0x0001U);
-//			}
-//		}
 		osThreadYield();
 	}
-
-//	if (isWake == 0)
-//		osThreadFlagsSet(handle, 0x0001U);
 }
 /* USER CODE END 4 */
 

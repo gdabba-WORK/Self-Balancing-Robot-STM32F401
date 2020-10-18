@@ -245,14 +245,9 @@ void MPU6050_InitOffset(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int1
 		TempGx += (int32_t)*gx;
 		TempGy += (int32_t)*gy;
 		TempGz += (int32_t)*gz;
-		//
-		//		if (i%64 == 0)
-		//			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-		//		if ((i+32)%64 == 0)
-		//			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+
 		HAL_Delay(1);
 	}
-	//	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
 	accOffset.x = (int16_t)(TempAx >> 11);
 	accOffset.y = (int16_t)(TempAy >> 11);
@@ -283,16 +278,10 @@ void MPU6050_GetData(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t
 	InBuffer[6] = (int16_t)(temp * 10L / 34) + 3653;
 
 	*ax = *(InBuffer + 0);
-	//	*ax = *(InBuffer + 0) / 16384;
 	*ay = *(InBuffer + 1);
-	//	*ay = *(InBuffer + 1) / 16384;
 	*az = *(InBuffer + 2);
-	//	*az = *(InBuffer + 2) / 16384;
 	*gx = *(InBuffer + 3);
-	//	*gx = *(InBuffer + 3) / 32.8f;
 	*gy = *(InBuffer + 4);
-	//	*gy = *(InBuffer + 4) / 32.8f;
 	*gz = *(InBuffer + 5);
-	//	*gz = *(InBuffer + 5) / 32.8f;
 	*tmpr = *(InBuffer + 6);
 }
